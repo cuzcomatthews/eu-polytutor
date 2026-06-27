@@ -40,7 +40,7 @@ export default function DashboardView({
     <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto pt-16 lg:pt-8 space-y-6">
       <div className="animate-fade-in">
         <h2 className="text-2xl font-bold">Dashboard</h2>
-        <p className="text-sm mt-1" style={{ color: "var(--color-sidebar-text)" }}>
+        <p className="text-sm mt-1" style={{ color: "var(--color-muted)" }}>
           Your learning journey at a glance
         </p>
       </div>
@@ -49,19 +49,19 @@ export default function DashboardView({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <div className="card animate-slide-up text-center">
           <div className="text-3xl font-bold mb-1" style={{ color: "var(--color-accent)" }}>{userLevel}</div>
-          <div className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>CEFR Level</div>
+          <div className="text-xs" style={{ color: "var(--color-muted)" }}>CEFR Level</div>
         </div>
         <div className="card animate-slide-up text-center" style={{ animationDelay: "0.05s" }}>
           <div className="text-3xl font-bold mb-1" style={{ color: "var(--color-warning)" }}>{streakDays} 🔥</div>
-          <div className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>Day Streak</div>
+          <div className="text-xs" style={{ color: "var(--color-muted)" }}>Day Streak</div>
         </div>
         <div className="card animate-slide-up text-center" style={{ animationDelay: "0.1s" }}>
           <div className="text-3xl font-bold mb-1" style={{ color: "var(--color-success)" }}>{totalWords}</div>
-          <div className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>Words Saved</div>
+          <div className="text-xs" style={{ color: "var(--color-muted)" }}>Words Saved</div>
         </div>
         <div className="card animate-slide-up text-center" style={{ animationDelay: "0.15s" }}>
           <div className="text-3xl font-bold mb-1" style={{ color: "var(--color-accent)" }}>{totalTurns}</div>
-          <div className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>Total Turns</div>
+          <div className="text-xs" style={{ color: "var(--color-muted)" }}>Total Turns</div>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export default function DashboardView({
             }}
           />
         </div>
-        <p className="text-xs mt-2" style={{ color: "var(--color-sidebar-text)" }}>
+        <p className="text-xs mt-2" style={{ color: "var(--color-muted)" }}>
           {completedCount} of {topicCount} topics completed ({progressPct}%)
         </p>
       </div>
@@ -88,21 +88,21 @@ export default function DashboardView({
         <button onClick={() => onNavigate("chat")} className="card text-left group cursor-pointer">
           <div className="text-2xl mb-2">💬</div>
           <h3 className="font-semibold text-sm mb-1">Start Chatting</h3>
-          <p className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
+          <p className="text-xs" style={{ color: "var(--color-muted)" }}>
             Practice conversation with your AI tutor
           </p>
         </button>
         <button onClick={() => onNavigate("lessons")} className="card text-left group cursor-pointer">
           <div className="text-2xl mb-2">📝</div>
           <h3 className="font-semibold text-sm mb-1">Take Lessons</h3>
-          <p className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
+          <p className="text-xs" style={{ color: "var(--color-muted)" }}>
             {completedCount > 0 ? "Continue your learning path" : "Start your first lesson"}
           </p>
         </button>
         <button onClick={() => onNavigate("dictionary")} className="card text-left group cursor-pointer">
           <div className="text-2xl mb-2">📚</div>
           <h3 className="font-semibold text-sm mb-1">Review Words</h3>
-          <p className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
+          <p className="text-xs" style={{ color: "var(--color-muted)" }}>
             Practice your saved vocabulary
           </p>
         </button>
@@ -118,11 +118,11 @@ export default function DashboardView({
                 style={{ borderColor: "var(--color-border)" }}>
                 <div>
                   <p className="text-sm font-medium">{item.title}</p>
-                  <p className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
+                  <p className="text-xs" style={{ color: "var(--color-muted)" }}>
                     {item.roleName} • {item.turnCount} turns
                   </p>
                 </div>
-                <span className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
+                <span className="text-xs" style={{ color: "var(--color-muted)" }}>
                   {new Date(item.lastActive).toLocaleDateString()}
                 </span>
               </div>

@@ -22,8 +22,9 @@ export async function POST(request: NextRequest) {
     const nativeName = env.nativeLanguage === "es" ? "Spanish" : env.nativeLanguage;
 
     const wordList = entries.map((e) => `${e.word} (${e.translation})`).join(", ");
+    const exerciseCount = entries.length <= 3 ? 3 : Math.min(15, entries.length * 2);
 
-    const prompt = `Create 3 quick practice exercises using ONLY these ${targetName} words: ${wordList}.
+    const prompt = `Create ${exerciseCount} practice exercises using these ${targetName} words: ${wordList}.
 
 The user's native language is ${nativeName}.
 
@@ -45,11 +46,16 @@ Return ONLY valid JSON following this exact shape:
       "kind": "match_pairs",
       "prompt": "Match words to translations",
       "payload": { "pairs": [{"left": "${targetName}", "right": "${nativeName}"}] }
+    },
+    {
+      "kind": "type_answer",
+      "prompt": "Write this in ${targetName}",
+      "payload": { "answers": ["correct answer"], "hint": "${nativeName} phrase to translate" }
     }
   ]
 }
 
-Use exactly 3 exercises mixing the kinds above. All prompts and hints in ${nativeName}.`;
+Use exactly ${exerciseCount} exercises mixing the kinds above. For 1-3 words, test every word. For more words, sample randomly. All prompts and hints in ${nativeName}.`;
 
     const response = await generateResponse(
       [{ role: "user", content: prompt }],

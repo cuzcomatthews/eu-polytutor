@@ -320,7 +320,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
             >
               <div className="text-sm font-medium truncate">{c.title}</div>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
+                <span className="text-xs" style={{ color: "var(--color-muted)" }}>
                   {c.roleName} • {c.turnCount}t
                 </span>
                 <button
@@ -333,7 +333,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
             </div>
           ))}
           {conversations.length === 0 && (
-            <p className="text-xs text-center py-6" style={{ color: "var(--color-sidebar-text)" }}>
+            <p className="text-xs text-center py-6" style={{ color: "var(--color-muted)" }}>
               No conversations yet
             </p>
           )}
@@ -346,7 +346,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
               <div className="text-center space-y-3 p-6">
                 <div className="text-5xl">💬</div>
                 <h3 className="text-lg font-semibold">Select or create a conversation</h3>
-                <p className="text-sm" style={{ color: "var(--color-sidebar-text)" }}>
+                <p className="text-sm" style={{ color: "var(--color-muted)" }}>
                   Choose a role above and start chatting
                 </p>
                 {/* Mobile conversation list */}
@@ -358,7 +358,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                       className="card w-full text-left"
                     >
                       <div className="text-sm font-medium">{c.title}</div>
-                      <div className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
+                      <div className="text-xs" style={{ color: "var(--color-muted)" }}>
                         {c.roleName} • {c.turnCount} turns
                       </div>
                     </button>
@@ -391,7 +391,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                       {translations[i] && (
                         <div className="mt-2 pt-2 text-xs opacity-85 italic" style={{
                           borderTop: "1px solid var(--color-border)",
-                          color: "var(--color-sidebar-text)",
+                          color: "var(--color-muted)",
                         }}>
                           <span className="font-semibold not-italic" style={{ color: "var(--color-accent)" }}>Translation: </span>
                           {translations[i]}
@@ -458,7 +458,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
               <div className="p-3 border-t" style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}>
                 {/* Metrics */}
                 {metrics && (
-                  <div className="flex gap-3 text-xs mb-2 px-1" style={{ color: "var(--color-sidebar-text)" }}>
+                  <div className="flex gap-3 text-xs mb-2 px-1" style={{ color: "var(--color-muted)" }}>
                     <span>STT: {metrics.sttMs}ms</span>
                     <span>RAG: {metrics.ragMs}ms</span>
                     <span>LLM: {metrics.llmMs}ms</span>

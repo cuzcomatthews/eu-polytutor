@@ -50,13 +50,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="card p-8 animate-fade-in">
           <h1 className="text-2xl font-bold text-center mb-1">PolyTutor</h1>
-          <p className="text-sm text-center mb-6" style={{ color: "var(--color-sidebar-text)" }}>
+          <p className="text-sm text-center mb-6" style={{ color: "var(--color-muted)" }}>
             {isSignup ? "Create an account" : "Sign in to continue"}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs font-medium" style={{ color: "var(--color-sidebar-text)" }}>
+              <label className="text-xs font-medium" style={{ color: "var(--color-muted)" }}>
                 Username
               </label>
               <input
@@ -71,7 +71,7 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium" style={{ color: "var(--color-sidebar-text)" }}>
+              <label className="text-xs font-medium" style={{ color: "var(--color-muted)" }}>
                 Password
               </label>
               <input
@@ -114,7 +114,7 @@ export default function LoginPage() {
             <button
               onClick={fillDemo}
               className="text-xs w-full text-center opacity-40 hover:opacity-70"
-              style={{ color: "var(--color-sidebar-text)" }}
+              style={{ color: "var(--color-muted)" }}
             >
               Fill demo credentials
             </button>

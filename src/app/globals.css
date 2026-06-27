@@ -18,6 +18,7 @@
   --color-card-hover: var(--card-hover);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-owl-blue: var(--owl-blue);
@@ -43,6 +44,7 @@
   --card-hover: #f0f0f0;
   --border: #e5e5e5;
   --input: #f7f7f7;
+  --muted: #afafaf;
   --owl-blue: #1cb0f6;
   --owl-green: #58cc02;
   --owl-red: #ff4b4b;

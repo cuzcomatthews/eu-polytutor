@@ -122,7 +122,20 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
   if (!input.skipTts) {
     try {
-      const audioBuffer = await synthesizeSpeech(responseText, role.voiceId);
+      // Check user voice override
+      let voiceId = role.voiceId;
+      const user = await prisma.user.findUnique({
+        where: { id: input.userId },
+        select: { professorVoice: true, tutorVoice: true, companionMVoice: true, companionFVoice: true },
+      });
+      if (user) {
+        if (role.name === "Professor" && user.professorVoice) voiceId = user.professorVoice;
+        else if (role.name.includes("Tutor") && user.tutorVoice) voiceId = user.tutorVoice;
+        else if (role.name === "Male Companion" && user.companionMVoice) voiceId = user.companionMVoice;
+        else if (role.name === "Female Companion" && user.companionFVoice) voiceId = user.companionFVoice;
+      }
+
+      const audioBuffer = await synthesizeSpeech(responseText, voiceId);
       audioBase64 = audioBuffer.toString("base64");
     } catch {}
   }

@@ -61,7 +61,23 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const documents = await getRagDocuments();
-    return NextResponse.json({ documents });
+    // Deduplicate by source file — show one row per uploaded file, not per chunk
+    const seen = new Map<string, any>();
+    for (const doc of documents) {
+      const key = (doc.metadata as any)?.sourceFile || "unknown";
+      if (!seen.has(key)) {
+        seen.set(key, { ...doc, chunkCount: 1 });
+      } else {
+        const existing = seen.get(key)!;
+        existing.chunkCount = (existing.chunkCount || 1) + 1;
+        // Keep oldest (first) as representative
+      }
+    }
+    return NextResponse.json({
+      documents: Array.from(seen.values()),
+      totalChunks: documents.length,
+      totalFiles: seen.size,
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -110,7 +110,7 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
     <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto pt-16 lg:pt-8 space-y-6">
       <div className="animate-fade-in">
         <h2 className="text-2xl font-bold">Lessons</h2>
-        <p className="text-sm mt-1" style={{ color: "var(--color-sidebar-text)" }}>
+        <p className="text-sm mt-1" style={{ color: "var(--color-muted)" }}>
           {userLevel} syllabus and exercises
         </p>
       </div>
@@ -163,7 +163,7 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
                       </span>
                       <div>
                         <p className="text-sm font-medium">{topic.title}</p>
-                        <p className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>{topic.description}</p>
+                        <p className="text-xs" style={{ color: "var(--color-muted)" }}>{topic.description}</p>
                       </div>
                     </div>
                   </button>
@@ -172,7 +172,7 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
           </div>
         ) : (
           <div className="text-center py-8">
-            <p className="text-sm" style={{ color: "var(--color-sidebar-text)" }}>
+            <p className="text-sm" style={{ color: "var(--color-muted)" }}>
               No syllabus generated yet for {userLevel}. Click "Generate Syllabus".
             </p>
           </div>
@@ -187,7 +187,7 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
             <span className="w-2.5 h-2.5 rounded-full animate-bounce" style={{ background: "var(--color-accent)", animationDelay: "0.15s" }} />
             <span className="w-2.5 h-2.5 rounded-full animate-bounce" style={{ background: "var(--color-accent)", animationDelay: "0.3s" }} />
           </div>
-          <p className="text-sm mt-3" style={{ color: "var(--color-sidebar-text)" }}>Generating...</p>
+          <p className="text-sm mt-3" style={{ color: "var(--color-muted)" }}>Generating...</p>
         </div>
       )}
 
@@ -299,7 +299,7 @@ function LessonOverlay({
         <div className="card max-w-xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-fade-in" onClick={(e) => e.stopPropagation()}>
           <div className="text-center">
             <h2 className="text-xl font-bold">{topic.title}</h2>
-            <p className="text-sm mt-1" style={{ color: "var(--color-sidebar-text)" }}>{topic.description}</p>
+            <p className="text-sm mt-1" style={{ color: "var(--color-muted)" }}>{topic.description}</p>
           </div>
 
           {teachingNotes && (
@@ -309,7 +309,7 @@ function LessonOverlay({
             </div>
           )}
 
-          <div className="mt-4 text-xs text-center" style={{ color: "var(--color-sidebar-text)" }}>
+          <div className="mt-4 text-xs text-center" style={{ color: "var(--color-muted)" }}>
             {totalCount} exercises
           </div>
 

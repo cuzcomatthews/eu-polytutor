@@ -142,14 +142,14 @@ function LessonContent() {
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="card max-w-xl w-full text-center">
             <h1 className="text-2xl font-bold">{topicTitle}</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--color-sidebar-text)" }}>{topicDescription}</p>
+            <p className="text-sm mt-1" style={{ color: "var(--color-muted)" }}>{topicDescription}</p>
             {exercises?.teaching_notes && (
               <div className="mt-4 p-4 rounded-xl text-sm text-left" style={{ background: "rgba(99,102,241,0.08)" }}>
                 <p className="font-bold text-xs uppercase mb-1" style={{ color: "var(--color-accent)" }}>Mini-lesson</p>
                 <p>{exercises.teaching_notes}</p>
               </div>
             )}
-            <div className="mt-4 text-xs" style={{ color: "var(--color-sidebar-text)" }}>{totalCount} exercises</div>
+            <div className="mt-4 text-xs" style={{ color: "var(--color-muted)" }}>{totalCount} exercises</div>
             <button onClick={() => setPhase("playing")} className="btn-primary mt-4 w-full">Start</button>
           </div>
         </div>

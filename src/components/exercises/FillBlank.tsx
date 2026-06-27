@@ -37,7 +37,7 @@ export function FillBlank({ exercise, onAnswerChange, disabled }: ExerciseProps)
               Show Hint
             </button>
           ) : (
-            <p className="text-xs p-2 rounded-lg" style={{ background: "var(--color-input)", color: "var(--color-sidebar-text)" }}>
+            <p className="text-xs p-2 rounded-lg" style={{ background: "var(--color-input)", color: "var(--color-muted)" }}>
               {hint}
             </p>
           )}
