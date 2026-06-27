@@ -191,3 +191,23 @@ body {
   0%, 100% { transform: scale(1); background: var(--error); }
   50% { transform: scale(1.1); background: #dc2626; }
 }
+
+/* Markdown prose styling */
+.prose h1, .prose h2, .prose h3 {
+  font-weight: 700;
+  margin: 0.75em 0 0.25em;
+}
+.prose h1 { font-size: 1.25em; }
+.prose h2 { font-size: 1.1em; }
+.prose h3 { font-size: 1em; }
+.prose p { margin: 0.25em 0; }
+.prose ul, .prose ol { padding-left: 1.5em; margin: 0.25em 0; }
+.prose li { margin: 0.125em 0; }
+.prose strong { font-weight: 700; }
+.prose em { font-style: italic; }
+.prose table { border-collapse: collapse; width: 100%; margin: 0.5em 0; font-size: 0.875em; }
+.prose th, .prose td { border: 1px solid var(--border); padding: 0.4em 0.6em; text-align: left; }
+.prose th { background: var(--input); font-weight: 700; }
+.prose code { background: var(--input); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.85em; }
+.prose pre { background: var(--input); padding: 0.5em 0.75em; border-radius: 8px; overflow-x: auto; margin: 0.5em 0; }
+.prose hr { border: none; border-top: 1px solid var(--border); margin: 0.75em 0; }

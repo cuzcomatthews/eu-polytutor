@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { marked } from "marked";
 import { getAuthHeaders } from "@/context/AuthContext";
 
 interface Role {
@@ -387,14 +388,12 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                       }}
                       onMouseUp={(e) => handleMessageMouseUp(i, e)}
                     >
-                      <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{
-                        __html: msg.content
-                          .replace(/&/g, "&amp;")
-                          .replace(/</g, "&lt;")
-                          .replace(/>/g, "&gt;")
-                          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                          .replace(/\*(.+?)\*/g, "<em>$1</em>")
-                      }} />
+                      <div
+                        className="whitespace-pre-wrap text-sm prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{
+                          __html: marked.parse(msg.content, { breaks: true }) as string,
+                        }}
+                      />
                       {translations[i] && (
                         <div className="mt-2 pt-2 text-xs opacity-85 italic" style={{
                           borderTop: "1px solid var(--color-border)",

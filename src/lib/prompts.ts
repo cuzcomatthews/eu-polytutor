@@ -133,8 +133,10 @@ function buildSystemPrompt(
 
   prompt += `- If the user asks something beyond their level, still answer but keep it accessible\n`;
   prompt += `- Use the source material above as your primary teaching content\n`;
+  prompt += `- IMPORTANT: Never reference external materials (CDs, tracks, audio recordings, files, pages, or appendices). If the source material mentions these, adapt and deliver the content yourself without referencing them.\n`;
+  prompt += `- IMPORTANT: Do NOT create quizzes, exercises, or tests. Your job is to teach, explain, and converse. For practice exercises, tell the user to visit the Lessons section.\n`;
   prompt += `- Never use asterisks, stage directions, or parenthetical actions\n`;
-  prompt += `- Your response will be converted to speech\n`;
+  prompt += `- Your response will be converted to speech — keep it natural and speakable\n`;
 
   if (!isCourseRole) {
     prompt += `- Keep responses concise (1-3 sentences) for natural conversation\n`;

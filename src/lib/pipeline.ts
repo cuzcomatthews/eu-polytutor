@@ -122,7 +122,6 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
   if (!input.skipTts) {
     try {
-      // Check user voice override
       let voiceId = role.voiceId;
       const user = await prisma.user.findUnique({
         where: { id: input.userId },
@@ -135,8 +134,18 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         else if (role.name === "Female Companion" && user.companionFVoice) voiceId = user.companionFVoice;
       }
 
-      const audioBuffer = await synthesizeSpeech(responseText, voiceId);
-      audioBase64 = audioBuffer.toString("base64");
+      try {
+        const audioBuffer = await synthesizeSpeech(responseText, voiceId);
+        audioBase64 = audioBuffer.toString("base64");
+      } catch {
+        // Retry with role default voice if user voice fails
+        if (voiceId !== role.voiceId) {
+          try {
+            const audioBuffer = await synthesizeSpeech(responseText, role.voiceId);
+            audioBase64 = audioBuffer.toString("base64");
+          } catch {}
+        }
+      }
     } catch (ttsErr: any) {
       console.error("TTS failed:", ttsErr?.message || ttsErr);
     }
