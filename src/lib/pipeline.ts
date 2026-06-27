@@ -143,13 +143,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       try {
         const audioBuffer = await synthesizeSpeech(responseText, voiceId);
         audioBase64 = audioBuffer.toString("base64");
-      } catch {
-        // Retry with role default voice if user voice fails
-        if (voiceId !== role.voiceId) {
-          try {
-            const audioBuffer = await synthesizeSpeech(responseText, role.voiceId);
-            audioBase64 = audioBuffer.toString("base64");
-          } catch {}
+      } catch (ttsErr: any) {
+        console.error("TTS failed with user voice, retrying with default:", ttsErr?.message);
+        try {
+          const audioBuffer = await synthesizeSpeech(responseText, role.voiceId);
+          audioBase64 = audioBuffer.toString("base64");
+        } catch (fallbackErr: any) {
+          console.error("TTS also failed with default voice:", fallbackErr?.message);
         }
       }
     } catch (ttsErr: any) {

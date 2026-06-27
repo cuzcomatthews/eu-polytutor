@@ -25,7 +25,9 @@ export default function SettingsView({ onProgressUpdate }: Props) {
   const [totalChunks, setTotalChunks] = useState(0);
   const [message, setMessage] = useState("");
   const [voices, setVoices] = useState<Record<string, string>>({});
-  const [savingVoices, setSavingVoices] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState("");
+  const [nativeLanguage, setNativeLanguage] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch("/api/rag/upload", { headers: getAuthHeaders() })
@@ -38,7 +40,11 @@ export default function SettingsView({ onProgressUpdate }: Props) {
 
     fetch("/api/settings", { headers: getAuthHeaders() })
       .then((r) => r.json())
-      .then((d) => { if (d.voices) setVoices(d.voices); })
+      .then((d) => {
+        if (d.voices) setVoices(d.voices);
+        if (d.targetLanguage) setTargetLanguage(d.targetLanguage);
+        if (d.nativeLanguage) setNativeLanguage(d.nativeLanguage);
+      })
       .catch(() => {});
   }, []);
 
@@ -75,19 +81,19 @@ export default function SettingsView({ onProgressUpdate }: Props) {
     setMessage("RAG reset complete");
   };
 
-  const saveVoices = async () => {
-    setSavingVoices(true);
+  const saveSettings = async () => {
+    setSaving(true);
     try {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({ voices }),
+        body: JSON.stringify({ voices, targetLanguage, nativeLanguage }),
       });
       const data = await res.json();
-      if (data.success) setMessage("Voice settings saved");
-      else setMessage("Failed to save voices");
+      if (data.success) setMessage("Settings saved");
+      else setMessage("Failed to save");
     } catch { setMessage("Failed to save"); }
-    setSavingVoices(false);
+    setSaving(false);
   };
 
   return (
@@ -111,6 +117,39 @@ export default function SettingsView({ onProgressUpdate }: Props) {
           </div>
         </div>
       )}
+
+      {/* Language Settings */}
+      <div className="card animate-slide-up">
+        <h3 className="font-semibold mb-3">Language Configuration</h3>
+        <p className="text-xs mb-3" style={{ color: "var(--color-muted)" }}>
+          Set which language to learn and your native language for explanations.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-bold">Target Language (ISO code)</label>
+            <input
+              type="text"
+              value={targetLanguage}
+              onChange={(e) => setTargetLanguage(e.target.value)}
+              placeholder="de, en, fr, ja..."
+              className="input-field mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold">Native Language (ISO code)</label>
+            <input
+              type="text"
+              value={nativeLanguage}
+              onChange={(e) => setNativeLanguage(e.target.value)}
+              placeholder="es, en, pt..."
+              className="input-field mt-1"
+            />
+          </div>
+        </div>
+        <button onClick={saveSettings} disabled={saving} className="btn-primary mt-4 text-sm">
+          {saving ? "Saving..." : "Save Languages"}
+        </button>
+      </div>
 
       {/* TTS Voice Settings */}
       <div className="card animate-slide-up">
@@ -137,8 +176,8 @@ export default function SettingsView({ onProgressUpdate }: Props) {
             </div>
           ))}
         </div>
-        <button onClick={saveVoices} disabled={savingVoices} className="btn-primary mt-4 text-sm">
-          {savingVoices ? "Saving..." : "Save Voices"}
+        <button onClick={saveSettings} disabled={saving} className="btn-primary mt-4 text-sm">
+          {saving ? "Saving..." : "Save Voices"}
         </button>
       </div>
 
