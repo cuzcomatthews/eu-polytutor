@@ -15,7 +15,11 @@ export async function GET(request: NextRequest) {
       voices.companionFVoice = user.companionFVoice;
     }
 
-    return NextResponse.json({ voices });
+    return NextResponse.json({
+      voices,
+      targetLanguage: user?.targetLanguage || null,
+      nativeLanguage: user?.nativeLanguage || null,
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -25,18 +29,21 @@ export async function POST(request: NextRequest) {
   try {
     const { userId } = getUserFromRequest(request);
     const body = await request.json();
-    const { voices } = body;
+    const { voices, targetLanguage, nativeLanguage } = body;
+
+    const updateData: any = {};
 
     if (voices && typeof voices === "object") {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          professorVoice: voices.professorVoice || null,
-          tutorVoice: voices.tutorVoice || null,
-          companionMVoice: voices.companionMVoice || null,
-          companionFVoice: voices.companionFVoice || null,
-        },
-      });
+      updateData.professorVoice = voices.professorVoice || null;
+      updateData.tutorVoice = voices.tutorVoice || null;
+      updateData.companionMVoice = voices.companionMVoice || null;
+      updateData.companionFVoice = voices.companionFVoice || null;
+    }
+    if (targetLanguage !== undefined) updateData.targetLanguage = targetLanguage || null;
+    if (nativeLanguage !== undefined) updateData.nativeLanguage = nativeLanguage || null;
+
+    if (Object.keys(updateData).length > 0) {
+      await prisma.user.update({ where: { id: userId }, data: updateData });
     }
 
     return NextResponse.json({ success: true });

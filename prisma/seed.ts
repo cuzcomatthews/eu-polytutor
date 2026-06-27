@@ -181,6 +181,7 @@ async function main() {
   if (existingSyllabus === 0) {
     await prisma.syllabus.create({
       data: {
+        userId: demoUserId,
         level: "A1.1",
         content: starterSyllabus,
         isActive: true,

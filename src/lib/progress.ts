@@ -8,7 +8,7 @@ export async function getProgress(userId: string) {
   const dictCount = await prisma.dictionaryEntry.count({ where: { userId } });
   const convCount = await prisma.conversation.count({ where: { userId } });
   const activeSyllabus = await prisma.syllabus.findFirst({
-    where: { isActive: true },
+    where: { isActive: true, userId },
     orderBy: { createdAt: "desc" },
   });
 

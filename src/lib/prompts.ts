@@ -37,7 +37,9 @@ export async function buildChatMessages(
   history: { role: string; content: string }[],
   ragContext: RagDocument[],
   summary: string,
-  userLevel: string
+  userLevel: string,
+  targetLang: string,
+  nativeLang: string
 ): Promise<{ role: string; content: string }[]> {
   const role = await prisma.role.findUnique({ where: { id: roleId } });
   if (!role) throw new Error(`Role not found: ${roleId}`);
@@ -48,8 +50,8 @@ export async function buildChatMessages(
     ragContext,
     summary,
     userLevel,
-    env.targetLanguage,
-    env.nativeLanguage
+    targetLang,
+    nativeLang
   );
 
   const messages: { role: string; content: string }[] = [
@@ -150,10 +152,12 @@ function buildSystemPrompt(
 
 export async function buildSyllabusPrompt(
   level: string,
-  ragDocuments: RagDocument[]
+  ragDocuments: RagDocument[],
+  targetLang: string,
+  nativeLang: string
 ): Promise<string> {
-  const targetName = LANGUAGE_NAMES[env.targetLanguage] || env.targetLanguage;
-  const nativeName = NATIVE_NAMES[env.nativeLanguage] || env.nativeLanguage;
+  const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
+  const nativeName = NATIVE_NAMES[nativeLang] || nativeLang;
 
   const ragContent = ragDocuments
     .map((d) => d.content.slice(0, 500))
@@ -188,10 +192,12 @@ export async function buildExercisePrompt(
   topicDescription: string,
   keyPoints: string[],
   ragDocuments: RagDocument[],
-  userLevel: string
+  userLevel: string,
+  targetLang: string,
+  nativeLang: string
 ): Promise<string> {
-  const targetName = LANGUAGE_NAMES[env.targetLanguage] || env.targetLanguage;
-  const nativeName = NATIVE_NAMES[env.nativeLanguage] || env.nativeLanguage;
+  const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
+  const nativeName = NATIVE_NAMES[nativeLang] || nativeLang;
 
   const ragContent = ragDocuments
     .map((d) => d.content.slice(0, 400))
@@ -253,9 +259,10 @@ All prompts, hints, and explanations must be in ${nativeName}. All ${targetName}
 export async function buildMilestoneEvalPrompt(
   level: string,
   ragDocuments: RagDocument[],
-  completedTopics: string[]
+  completedTopics: string[],
+  targetLang: string
 ): Promise<string> {
-  const targetName = LANGUAGE_NAMES[env.targetLanguage] || env.targetLanguage;
+  const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
 
   const ragContent = ragDocuments
     .map((d) => d.content.slice(0, 400))

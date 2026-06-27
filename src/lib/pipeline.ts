@@ -70,6 +70,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   // 4. Build prompt + LLM
   const history = await getRecentTurns(input.conversationId);
 
+  const user = await prisma.user.findUnique({ where: { id: input.userId } });
+  const targetLang = user?.targetLanguage || env.targetLanguage;
+  const nativeLang = user?.nativeLanguage || env.nativeLanguage;
+
   const messages = await buildChatMessages(
     input.roleId,
     userText,
@@ -77,7 +81,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     history,
     ragContext,
     summary,
-    input.userLevel
+    input.userLevel,
+    targetLang,
+    nativeLang
   );
 
   const t3 = performance.now();

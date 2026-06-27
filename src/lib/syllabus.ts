@@ -6,8 +6,11 @@ import env from "./env";
 
 export async function generateSyllabus(level: string, userId: string): Promise<Record<string, any>> {
   const ragDocs = await queryRag(level, undefined, 20, userId);
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const targetLang = user?.targetLanguage || env.targetLanguage;
+  const nativeLang = user?.nativeLanguage || env.nativeLanguage;
 
-  const prompt = await buildSyllabusPrompt(level, ragDocs);
+  const prompt = await buildSyllabusPrompt(level, ragDocs, targetLang, nativeLang);
 
   const response = await generateResponse(
     [{ role: "user", content: prompt }],
@@ -20,10 +23,11 @@ export async function generateSyllabus(level: string, userId: string): Promise<R
 
   const syllabusData = JSON.parse(jsonMatch[0]);
 
-  await prisma.syllabus.updateMany({ where: { isActive: true }, data: { isActive: false } });
+  await prisma.syllabus.updateMany({ where: { userId, isActive: true }, data: { isActive: false } });
 
   await prisma.syllabus.create({
     data: {
+      userId,
       level,
       content: syllabusData,
       isActive: true,
@@ -33,9 +37,9 @@ export async function generateSyllabus(level: string, userId: string): Promise<R
   return syllabusData;
 }
 
-export async function getActiveSyllabus(): Promise<Record<string, any> | null> {
+export async function getActiveSyllabus(userId: string): Promise<Record<string, any> | null> {
   const syllabus = await prisma.syllabus.findFirst({
-    where: { isActive: true },
+    where: { isActive: true, userId },
     orderBy: { createdAt: "desc" },
   });
 
@@ -64,13 +68,18 @@ export async function generateExercises(
 ): Promise<Record<string, any>> {
   const userLevel = await getCurrentLevel(userId);
   const ragDocs = await queryRag(topicTitle, userLevel, 10, userId);
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const targetLang = user?.targetLanguage || env.targetLanguage;
+  const nativeLang = user?.nativeLanguage || env.nativeLanguage;
 
   const prompt = await buildExercisePrompt(
     topicTitle,
     topicDescription,
     keyPoints,
     ragDocs,
-    userLevel
+    userLevel,
+    targetLang,
+    nativeLang
   );
 
   const response = await generateResponse(
@@ -156,8 +165,10 @@ export async function generateMilestoneEval(
   userId: string
 ): Promise<Record<string, any>> {
   const ragDocs = await queryRag(level, undefined, 20, userId);
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const targetLang = user?.targetLanguage || env.targetLanguage;
 
-  const prompt = await buildMilestoneEvalPrompt(level, ragDocs, completedTopics);
+  const prompt = await buildMilestoneEvalPrompt(level, ragDocs, completedTopics, targetLang);
 
   const response = await generateResponse(
     [{ role: "user", content: prompt }],

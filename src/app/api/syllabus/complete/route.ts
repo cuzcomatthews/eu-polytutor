@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const syllabus = await prisma.syllabus.findFirst({
-      where: { isActive: true },
+      where: { isActive: true, userId },
       orderBy: { createdAt: "desc" },
     });
 
