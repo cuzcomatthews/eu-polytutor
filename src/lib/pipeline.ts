@@ -142,7 +142,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         }
       } catch {}
 
-      const audioBuffer = await synthesizeSpeech(responseText, voiceId);
+      const speakText = responseText.length > 2000 ? responseText.slice(0, 1997) + "..." : responseText;
+      const audioBuffer = await synthesizeSpeech(speakText, voiceId);
       audioBase64 = audioBuffer.toString("base64");
     } catch {}
   }
