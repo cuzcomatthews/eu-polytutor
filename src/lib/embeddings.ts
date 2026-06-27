@@ -1,53 +1,65 @@
+import { HfInference } from "@huggingface/inference";
 import env from "./env";
 
+function getClient(): HfInference | null {
+  const token = process.env.HUGGINGFACEHUB_API_TOKEN;
+  if (!token) return null;
+  return new HfInference(token);
+}
+
 export async function embedText(text: string): Promise<number[]> {
-  if (!env.huggingfaceToken) {
+  const client = getClient();
+  if (!client) {
     throw new Error("HuggingFace API token not configured");
   }
 
-  const modelUrl = `https://api-inference.huggingface.co/models/${env.embeddingModel}`;
-
-  const response = await fetch(modelUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.huggingfaceToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ inputs: text }),
+  const result = await client.featureExtraction({
+    model: env.embeddingModel,
+    inputs: text,
   });
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`HuggingFace embedding error: ${response.status} ${err}`);
+  if (typeof result === "number") {
+    return [result];
   }
 
-  const data = await response.json();
-  return Array.isArray(data) ? data : data[0] || [];
+  if (Array.isArray(result)) {
+    if (result.length > 0 && Array.isArray(result[0])) {
+      return result as unknown as number[];
+    }
+    return result as unknown as number[];
+  }
+
+  return [];
 }
 
 export async function embedTexts(texts: string[]): Promise<number[][]> {
-  if (!env.huggingfaceToken) {
+  const client = getClient();
+  if (!client) {
     throw new Error("HuggingFace API token not configured");
   }
 
-  const modelUrl = `https://api-inference.huggingface.co/models/${env.embeddingModel}`;
+  const results: number[][] = [];
 
-  const response = await fetch(modelUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.huggingfaceToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ inputs: texts }),
-  });
+  for (const text of texts) {
+    const result = await client.featureExtraction({
+      model: env.embeddingModel,
+      inputs: text,
+    });
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`HuggingFace embedding error: ${response.status} ${err}`);
+    if (typeof result === "number") {
+      results.push([result]);
+    } else if (Array.isArray(result)) {
+      if (result.length > 0 && Array.isArray(result[0])) {
+        results.push(result as unknown as number[]);
+      } else {
+        results.push(result as unknown as number[]);
+      }
+    } else {
+      results.push([]);
+    }
   }
 
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  return results;
 }
 
 export function getEmbeddingDim(): number {
