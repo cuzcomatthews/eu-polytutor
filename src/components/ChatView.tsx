@@ -387,7 +387,14 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                       }}
                       onMouseUp={(e) => handleMessageMouseUp(i, e)}
                     >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{
+                        __html: msg.content
+                          .replace(/&/g, "&amp;")
+                          .replace(/</g, "&lt;")
+                          .replace(/>/g, "&gt;")
+                          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                          .replace(/\*(.+?)\*/g, "<em>$1</em>")
+                      }} />
                       {translations[i] && (
                         <div className="mt-2 pt-2 text-xs opacity-85 italic" style={{
                           borderTop: "1px solid var(--color-border)",

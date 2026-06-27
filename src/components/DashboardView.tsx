@@ -7,7 +7,6 @@ interface DashboardProps {
   userLevel: string;
   streakDays: number;
   totalWords: number;
-  totalTurns: number;
   onNavigate: (tab: string) => void;
 }
 
@@ -15,7 +14,6 @@ export default function DashboardView({
   userLevel,
   streakDays,
   totalWords,
-  totalTurns,
   onNavigate,
 }: DashboardProps) {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -46,7 +44,7 @@ export default function DashboardView({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
         <div className="card animate-slide-up text-center">
           <div className="text-3xl font-bold mb-1" style={{ color: "var(--color-accent)" }}>{userLevel}</div>
           <div className="text-xs" style={{ color: "var(--color-muted)" }}>CEFR Level</div>
@@ -58,10 +56,6 @@ export default function DashboardView({
         <div className="card animate-slide-up text-center" style={{ animationDelay: "0.1s" }}>
           <div className="text-3xl font-bold mb-1" style={{ color: "var(--color-success)" }}>{totalWords}</div>
           <div className="text-xs" style={{ color: "var(--color-muted)" }}>Words Saved</div>
-        </div>
-        <div className="card animate-slide-up text-center" style={{ animationDelay: "0.15s" }}>
-          <div className="text-3xl font-bold mb-1" style={{ color: "var(--color-accent)" }}>{totalTurns}</div>
-          <div className="text-xs" style={{ color: "var(--color-muted)" }}>Total Turns</div>
         </div>
       </div>
 

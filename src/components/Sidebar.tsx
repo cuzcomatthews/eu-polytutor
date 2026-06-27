@@ -18,7 +18,6 @@ interface SidebarProps {
   userLevel: string;
   streakDays: number;
   totalWords: number;
-  totalTurns: number;
 }
 
 export default function Sidebar({
@@ -29,7 +28,6 @@ export default function Sidebar({
   userLevel,
   streakDays,
   totalWords,
-  totalTurns,
 }: SidebarProps) {
   const { user, logout } = useAuth();
   return (
@@ -98,10 +96,6 @@ export default function Sidebar({
           <div className="flex items-center justify-between">
             <span className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>Words</span>
             <span className="text-xs text-white">{totalWords}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>Turns</span>
-            <span className="text-xs text-white">{totalTurns}</span>
           </div>
           {user && (
             <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>

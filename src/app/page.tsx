@@ -19,7 +19,6 @@ export default function Home() {
   const [userLevel, setUserLevel] = useState("A1.1");
   const [streakDays, setStreakDays] = useState(0);
   const [totalWords, setTotalWords] = useState(0);
-  const [totalTurns, setTotalTurns] = useState(0);
 
   const fetchProgress = useCallback(async () => {
     try {
@@ -28,7 +27,6 @@ export default function Home() {
       if (data.cefrLevel) setUserLevel(data.cefrLevel);
       if (data.streakDays !== undefined) setStreakDays(data.streakDays);
       if (data.totalWordsAdded !== undefined) setTotalWords(data.totalWordsAdded);
-      if (data.totalTurns !== undefined) setTotalTurns(data.totalTurns);
     } catch {}
   }, []);
 
@@ -60,9 +58,8 @@ export default function Home() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         userLevel={userLevel}
         streakDays={streakDays}
-        totalWords={totalWords}
-        totalTurns={totalTurns}
-      />
+          totalWords={totalWords}
+        />
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -78,7 +75,6 @@ export default function Home() {
             userLevel={userLevel}
             streakDays={streakDays}
             totalWords={totalWords}
-            totalTurns={totalTurns}
             onNavigate={setActiveTab}
           />
         )}
