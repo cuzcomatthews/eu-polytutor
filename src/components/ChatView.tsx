@@ -193,9 +193,6 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setIsProcessing(true);
 
-    // Safety: clear processing state after 30s
-    const timer = setTimeout(() => setIsProcessing(false), 30000);
-
     try {
       const res = await fetch("/api/chat/text", {
         method: "POST",
@@ -214,7 +211,6 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Connection error." }]);
     } finally {
-      clearTimeout(timer);
       setIsProcessing(false);
       onProgressUpdate();
     }
@@ -442,17 +438,6 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                     </div>
                   </div>
                 ))}
-                {isProcessing && (
-                  <div className="flex justify-start animate-fade-in">
-                    <div className="rounded-2xl px-4 py-3" style={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }}>
-                      <div className="flex gap-1.5">
-                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--color-accent)", animationDelay: "0s" }} />
-                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--color-accent)", animationDelay: "0.15s" }} />
-                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--color-accent)", animationDelay: "0.3s" }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
                 {selectedText && selectionPos && (
                   <div
                     className="fixed z-50 animate-fade-in"
