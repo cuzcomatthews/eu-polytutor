@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromRequest } from "@/lib/auth";
+import { tryGetUserFromRequest } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = getUserFromRequest(request);
+    const auth = tryGetUserFromRequest(request);
+    if (!auth) return NextResponse.json({ activity: [] });
 
     const conversations = await prisma.conversation.findMany({
-      where: { userId },
+      where: { userId: auth.userId },
       orderBy: { updatedAt: "desc" },
       take: 20,
       include: {

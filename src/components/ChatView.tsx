@@ -393,7 +393,16 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                       <div
                         className="whitespace-pre-wrap text-sm prose prose-sm max-w-none"
                         dangerouslySetInnerHTML={{
-                          __html: marked.parse(msg.content, { breaks: true }) as string,
+                          __html: (() => {
+                            try {
+                              return marked.parse(msg.content, { breaks: true }) as string;
+                            } catch {
+                              return msg.content
+                                .replace(/&/g, "&amp;")
+                                .replace(/</g, "&lt;")
+                                .replace(/>/g, "&gt;");
+                            }
+                          })(),
                         }}
                       />
                       {translations[i] && (
