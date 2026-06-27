@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
     let text = "";
 
     if (ext === "pdf") {
-      const buffer = Buffer.from(await file.arrayBuffer());
+      const bytes = new Uint8Array(await file.arrayBuffer());
       try {
         const { extractText } = await import("unpdf");
-        const result = await extractText(buffer);
+        const result = await extractText(bytes);
         text = result.text.join("\n\n");
       } catch (pdfErr: any) {
         return NextResponse.json(
