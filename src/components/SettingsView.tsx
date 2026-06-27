@@ -7,34 +7,15 @@ interface Props {
 }
 
 export default function SettingsView({ onProgressUpdate }: Props) {
-  const [settings, setSettings] = useState<Record<string, string>>({});
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadLevel, setUploadLevel] = useState("A1");
   const [uploading, setUploading] = useState(false);
   const [ragDocs, setRagDocs] = useState<any[]>([]);
   const [message, setMessage] = useState("");
-  const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then(setSettings).catch(() => {});
     fetch("/api/rag/upload").then((r) => r.json()).then((d) => setRagDocs(d.documents || [])).catch(() => {});
   }, []);
-
-  const saveSetting = async (key: string, value: string) => {
-    setSaving(key);
-    try {
-      await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [key]: value }),
-      });
-      setSettings((prev) => ({ ...prev, [key]: value }));
-      onProgressUpdate();
-    } catch (e) {
-      setMessage(`Failed to save ${key}`);
-    }
-    setSaving(null);
-  };
 
   const uploadDocument = async () => {
     if (!uploadFile) return;
@@ -46,7 +27,7 @@ export default function SettingsView({ onProgressUpdate }: Props) {
 
       const res = await fetch("/api/rag/upload", { method: "POST", body: formData });
       const data = await res.json();
-      setMessage(`Uploaded: ${data.fileName} (${data.indexed} chunks at level ${uploadLevel})`);
+      setMessage(`Indexed: ${data.fileName} (${data.indexed} chunks at level ${uploadLevel})`);
       setUploadFile(null);
 
       const docsRes = await fetch("/api/rag/upload");
@@ -71,128 +52,107 @@ export default function SettingsView({ onProgressUpdate }: Props) {
   };
 
   const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
-  const CEFR_LEVELS = ["A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2", "B2.1", "B2.2", "C1", "C2"];
-
-  const apiKeys = [
-    { key: "DEEPGRAM_API_KEY", label: "Deepgram API Key" },
-    { key: "DEEPSEEK_API_KEY", label: "Deepseek API Key" },
-    { key: "HUGGINGFACEHUB_API_TOKEN", label: "HuggingFace API Token" },
-  ];
-
-  const ttsVoices = [
-    { key: "DEEPGRAM_TTS_VOICE_PROFESSOR", label: "Professor TTS Voice ID" },
-    { key: "DEEPGRAM_TTS_VOICE_TUTOR", label: "Tutor TTS Voice ID" },
-    { key: "DEEPGRAM_TTS_VOICE_COMPANION_M", label: "Male Companion TTS Voice ID" },
-    { key: "DEEPGRAM_TTS_VOICE_COMPANION_F", label: "Female Companion TTS Voice ID" },
-  ];
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-3xl mx-auto pt-16 lg:pt-8 space-y-6">
       <div className="animate-fade-in">
         <h2 className="text-2xl font-bold">Settings</h2>
         <p className="text-sm mt-1" style={{ color: "var(--color-sidebar-text)" }}>
-          Configure API keys, language, and RAG documents
+          API keys are managed via Vercel environment variables
         </p>
       </div>
 
-      {/* API Keys */}
+      {/* API Keys Info */}
       <div className="card animate-slide-up">
-        <h3 className="font-semibold mb-4">API Keys</h3>
+        <h3 className="font-semibold mb-3">API Keys (Vercel Environment Variables)</h3>
+        <p className="text-sm mb-4" style={{ color: "var(--color-sidebar-text)" }}>
+          Set these in your Vercel dashboard under Project &rarr; Settings &rarr; Environment Variables.
+          They are read from <code style={{ background: "var(--color-input)", padding: "1px 4px", borderRadius: "3px" }}>process.env</code> at runtime.
+        </p>
 
-        {message && (
-          <p className={`text-xs mb-3 p-2 rounded ${message.includes("Failed") || message.includes("failed") ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
-            {message}
-            <button onClick={() => setMessage("")} className="ml-2 font-bold">x</button>
+        <div className="space-y-2">
+          {[
+            { key: "DEEPGRAM_API_KEY", desc: "Speech-to-text and text-to-speech (api.deepgram.com)" },
+            { key: "DEEPSEEK_API_KEY", desc: "LLM for chat and content generation (api.deepseek.com)" },
+            { key: "HUGGINGFACEHUB_API_TOKEN", desc: "Embeddings for RAG vector search (huggingface.co)" },
+            { key: "DEEPGRAM_TTS_VOICE_PROFESSOR", desc: "TTS voice for the Professor role" },
+            { key: "DEEPGRAM_TTS_VOICE_TUTOR", desc: "TTS voice for the Tutor role" },
+            { key: "DEEPGRAM_TTS_VOICE_COMPANION_M", desc: "TTS voice for the Male Companion role" },
+            { key: "DEEPGRAM_TTS_VOICE_COMPANION_F", desc: "TTS voice for the Female Companion role" },
+          ].map(({ key, desc }) => (
+            <div key={key} className="flex items-center justify-between py-2 px-3 rounded"
+              style={{ background: "var(--color-input)" }}>
+              <div>
+                <code className="text-xs font-mono font-bold">{key}</code>
+                <p className="text-xs mt-0.5" style={{ color: "var(--color-sidebar-text)" }}>{desc}</p>
+              </div>
+              <a
+                href={`https://vercel.com/cuzcomatthews-2409s-projects/eu-polytutor/settings/environment-variables`}
+                target="_blank"
+                className="btn-primary text-xs whitespace-nowrap"
+              >
+                Set in Vercel
+              </a>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 p-3 rounded" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid var(--color-accent)" }}>
+          <p className="text-xs font-medium" style={{ color: "var(--color-accent)" }}>
+            After setting environment variables in Vercel, the app will automatically redeploy with the new values.
           </p>
-        )}
-
-        <div className="space-y-3">
-          {apiKeys.map(({ key, label }) => (
-            <ApiKeyInput
-              key={key}
-              label={label}
-              value={settings[key] || ""}
-              saving={saving === key}
-              onSave={(v) => saveSetting(key, v)}
-            />
-          ))}
-          {ttsVoices.map(({ key, label }) => (
-            <ApiKeyInput
-              key={key}
-              label={label}
-              value={settings[key] || ""}
-              saving={saving === key}
-              onSave={(v) => saveSetting(key, v)}
-            />
-          ))}
         </div>
       </div>
 
-      {/* Language */}
+      {/* Database Status */}
       <div className="card animate-slide-up">
-        <h3 className="font-semibold mb-3">Language</h3>
+        <h3 className="font-semibold mb-1">Database</h3>
+        <p className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
+          DATABASE_URL is configured. Data is stored in Neon PostgreSQL with PGVector.
+          <br />
+          <a
+            href="https://console.neon.tech"
+            target="_blank"
+            className="underline"
+            style={{ color: "var(--color-accent)" }}
+          >
+            Open Neon Console
+          </a>
+        </p>
+      </div>
+
+      {/* Language Config */}
+      <div className="card animate-slide-up">
+        <h3 className="font-semibold mb-3">Language Configuration</h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs block mb-1" style={{ color: "var(--color-sidebar-text)" }}>
-              Target Language (learning)
+              TARGET_LANGUAGE (environment variable)
             </label>
-            <select
-              value={settings.TARGET_LANGUAGE || "de"}
-              onChange={async (e) => {
-                const val = e.target.value;
-                await saveSetting("TARGET_LANGUAGE", val);
-              }}
-              className="input-field"
-            >
-              <option value="de">German</option>
-              <option value="fr">French</option>
-              <option value="it">Italian</option>
-              <option value="pt">Portuguese</option>
-              <option value="ja">Japanese</option>
-              <option value="ko">Korean</option>
-              <option value="zh">Chinese</option>
-            </select>
+            <input
+              type="text"
+              value="de"
+              disabled
+              className="input-field opacity-50"
+            />
+            <p className="text-xs mt-1" style={{ color: "var(--color-sidebar-text)" }}>
+              Change via Vercel env vars
+            </p>
           </div>
           <div>
             <label className="text-xs block mb-1" style={{ color: "var(--color-sidebar-text)" }}>
-              Native Language
+              NATIVE_LANGUAGE (environment variable)
             </label>
-            <select
-              value={settings.NATIVE_LANGUAGE || "es"}
-              onChange={async (e) => {
-                await saveSetting("NATIVE_LANGUAGE", e.target.value);
-              }}
-              className="input-field"
-            >
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="it">Italian</option>
-              <option value="pt">Portuguese</option>
-            </select>
+            <input
+              type="text"
+              value="es"
+              disabled
+              className="input-field opacity-50"
+            />
+            <p className="text-xs mt-1" style={{ color: "var(--color-sidebar-text)" }}>
+              Change via Vercel env vars
+            </p>
           </div>
-        </div>
-      </div>
-
-      {/* Level Override */}
-      <div className="card animate-slide-up">
-        <h3 className="font-semibold mb-3">CEFR Level Override</h3>
-        <div className="flex items-center gap-3">
-          <select
-            value={settings.CURRENT_CEFR_LEVEL || "A1.1"}
-            onChange={async (e) => {
-              await saveSetting("CURRENT_CEFR_LEVEL", e.target.value);
-            }}
-            className="input-field max-w-[150px]"
-          >
-            {CEFR_LEVELS.map((l) => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
-          <span className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
-            Current: {settings.CURRENT_CEFR_LEVEL || "A1.1"}
-          </span>
         </div>
       </div>
 
@@ -225,10 +185,17 @@ export default function SettingsView({ onProgressUpdate }: Props) {
           </button>
         </div>
 
+        {message && (
+          <p className={`text-xs mb-3 p-2 rounded ${message.includes("failed") || message.includes("Failed") ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
+            {message}
+            <button onClick={() => setMessage("")} className="ml-2 font-bold">x</button>
+          </p>
+        )}
+
         <div className="max-h-60 overflow-y-auto space-y-1 mb-3">
           {ragDocs.length === 0 ? (
             <p className="text-xs text-center py-4" style={{ color: "var(--color-sidebar-text)" }}>
-              No documents indexed. Upload learning materials (PDF, TXT, MD).
+              No documents indexed. Upload learning materials (PDF, TXT, MD) tagged with CEFR level.
             </p>
           ) : (
             ragDocs.map((doc) => (
@@ -254,58 +221,6 @@ export default function SettingsView({ onProgressUpdate }: Props) {
 
         <button onClick={resetRag} className="btn-danger text-sm">
           Reset All RAG Data
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ApiKeyInput({
-  label,
-  value,
-  saving,
-  onSave,
-}: {
-  label: string;
-  value: string;
-  saving: boolean;
-  onSave: (value: string) => void;
-}) {
-  const [show, setShow] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  const handleSave = () => {
-    onSave(draft);
-  };
-
-  const isDirty = draft !== value;
-
-  return (
-    <div>
-      <label className="text-xs block mb-1" style={{ color: "var(--color-sidebar-text)" }}>
-        {label}
-      </label>
-      <div className="flex gap-2">
-        <input
-          type={show ? "text" : "password"}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder={label}
-          className="input-field flex-1 font-mono text-xs"
-        />
-        <button
-          onClick={() => setShow(!show)}
-          className="btn-ghost text-xs px-2"
-          type="button"
-        >
-          {show ? "Hide" : "Show"}
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={!isDirty || saving}
-          className="btn-primary text-xs px-3 whitespace-nowrap"
-        >
-          {saving ? "..." : "Save"}
         </button>
       </div>
     </div>

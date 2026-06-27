@@ -1,4 +1,4 @@
-import env, { getApiKey } from "./env";
+import env from "./env";
 
 interface LLMMessage {
   role: string;
@@ -15,8 +15,7 @@ export async function generateResponse(
   maxTokens: number = env.llmMaxTeachingTokens,
   temperature: number = 0.7
 ): Promise<LLMResponse> {
-  const apiKey = process.env.DEEPSEEK_API_KEY || (await getApiKey("DEEPSEEK_API_KEY"));
-  if (!apiKey) {
+  if (!env.deepseekApiKey) {
     throw new Error("Deepseek API key not configured");
   }
 
@@ -26,7 +25,7 @@ export async function generateResponse(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${env.deepseekApiKey}`,
       },
       body: JSON.stringify({
         model: "deepseek-chat",

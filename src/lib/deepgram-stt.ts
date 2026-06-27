@@ -1,4 +1,4 @@
-import env, { getApiKey } from "./env";
+import env from "./env";
 
 interface STTResult {
   text: string;
@@ -7,8 +7,7 @@ interface STTResult {
 }
 
 export async function transcribeAudio(audioBytes: Buffer): Promise<STTResult> {
-  const apiKey = process.env.DEEPGRAM_API_KEY || (await getApiKey("DEEPGRAM_API_KEY"));
-  if (!apiKey) {
+  if (!env.deepgramApiKey) {
     throw new Error("Deepgram API key not configured");
   }
 
@@ -30,7 +29,7 @@ export async function transcribeAudio(audioBytes: Buffer): Promise<STTResult> {
     {
       method: "POST",
       headers: {
-        Authorization: `Token ${apiKey}`,
+        Authorization: `Token ${env.deepgramApiKey}`,
         "Content-Type": "audio/wav",
       },
       body: blob as any,
