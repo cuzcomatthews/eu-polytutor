@@ -1,5 +1,5 @@
 import { transcribeAudio } from "./deepgram-stt";
-import { synthesizeSpeech } from "./deepgram-tts";
+import { synthesizeSpeechLong } from "./deepgram-tts";
 import { generateResponse } from "./deepseek";
 import { queryRag } from "./rag";
 import { saveTurn, getRecentTurns, getTotalTurns, generateSummary, getSummary } from "./memory";
@@ -142,8 +142,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         }
       } catch {}
 
-      const speakText = responseText.length > 2000 ? responseText.slice(0, 1997) + "..." : responseText;
-      const audioBuffer = await synthesizeSpeech(speakText, voiceId);
+      const audioBuffer = await synthesizeSpeechLong(responseText, voiceId);
       audioBase64 = audioBuffer.toString("base64");
     } catch {}
   }
