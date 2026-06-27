@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { getAuthHeaders } from "@/context/AuthContext";
 
 interface DictionaryEntry {
   id: string;
@@ -30,7 +31,7 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
-      const res = await fetch(`/api/dictionary?${params}`);
+      const res = await fetch(`/api/dictionary?${params}`, { headers: getAuthHeaders() });
       const data = await res.json();
       setEntries(data.entries || []);
     } catch {}
@@ -46,7 +47,7 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
     try {
       await fetch("/api/dictionary", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ word: newWord.trim() }),
       });
       setNewWord("");
@@ -57,7 +58,7 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
   };
 
   const deleteWord = async (id: string) => {
-    await fetch(`/api/dictionary/${id}`, { method: "DELETE" });
+    await fetch(`/api/dictionary/${id}`, { method: "DELETE", headers: getAuthHeaders() });
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
@@ -92,7 +93,7 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
     try {
       const res = await fetch("/api/dictionary/practice", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ wordIds: ids }),
       });
       const data = await res.json();
@@ -238,7 +239,7 @@ function ExerciseItem({ exercise, index }: { exercise: any; index: number }) {
     try {
       const res = await fetch("/api/lessons/evaluate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
           userAnswer: answer.trim(),
           expectedAnswer: exercise.answer,

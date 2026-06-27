@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getAuthHeaders } from "@/context/AuthContext";
 
 interface Props {
   onProgressUpdate: () => void;
@@ -14,7 +15,7 @@ export default function SettingsView({ onProgressUpdate }: Props) {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch("/api/rag/upload").then((r) => r.json()).then((d) => setRagDocs(d.documents || [])).catch(() => {});
+    fetch("/api/rag/upload", { headers: getAuthHeaders() }).then((r) => r.json()).then((d) => setRagDocs(d.documents || [])).catch(() => {});
   }, []);
 
   const uploadDocument = async () => {
@@ -25,7 +26,7 @@ export default function SettingsView({ onProgressUpdate }: Props) {
       formData.append("file", uploadFile);
       formData.append("level", uploadLevel);
 
-      const res = await fetch("/api/rag/upload", { method: "POST", body: formData });
+      const res = await fetch("/api/rag/upload", { method: "POST", headers: getAuthHeaders(), body: formData });
       const data = await res.json();
 
       if (data.error) {
@@ -35,7 +36,7 @@ export default function SettingsView({ onProgressUpdate }: Props) {
       }
 
       setUploadFile(null);
-      const docsRes = await fetch("/api/rag/upload");
+      const docsRes = await fetch("/api/rag/upload", { headers: getAuthHeaders() });
       const docsData = await docsRes.json();
       setRagDocs(docsData.documents || []);
     } catch (e) {
@@ -45,13 +46,13 @@ export default function SettingsView({ onProgressUpdate }: Props) {
   };
 
   const deleteRagDoc = async (id: string) => {
-    await fetch(`/api/rag/documents/${id}`, { method: "DELETE" });
+    await fetch(`/api/rag/documents/${id}`, { method: "DELETE", headers: getAuthHeaders() });
     setRagDocs((prev) => prev.filter((d) => d.id !== id));
   };
 
   const resetRag = async () => {
     if (!confirm("Delete ALL RAG documents?")) return;
-    await fetch("/api/rag/reindex", { method: "POST" });
+    await fetch("/api/rag/reindex", { method: "POST", headers: getAuthHeaders() });
     setRagDocs([]);
     setMessage("RAG reset complete");
   };

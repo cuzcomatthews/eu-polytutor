@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { getAuthHeaders } from "@/context/AuthContext";
 
 interface Role {
   id: string;
@@ -53,7 +54,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
   const [rolesLoading, setRolesLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/roles").then((r) => r.json()).then((d) => {
+    fetch("/api/roles", { headers: getAuthHeaders() }).then((r) => r.json()).then((d) => {
       setRoles(d.roles || []);
       if (d.roles?.length && !activeRoleId) {
         setActiveRoleId(d.roles[0].id);
@@ -68,7 +69,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch("/api/conversations");
+      const res = await fetch("/api/conversations", { headers: getAuthHeaders() });
       const data = await res.json();
       setConversations(data.conversations || []);
     } catch {}
@@ -76,7 +77,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
 
   const loadConversation = async (convId: string) => {
     try {
-      const res = await fetch(`/api/conversations/${convId}`);
+      const res = await fetch(`/api/conversations/${convId}`, { headers: getAuthHeaders() });
       const data = await res.json();
       if (data.conversation) {
         setActiveConvId(convId);
@@ -97,7 +98,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     try {
       const res = await fetch("/api/conversations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ roleId: activeRoleId, title: `Chat with ${roles.find((r) => r.id === activeRoleId)?.name || "Tutor"}` }),
       });
       const data = await res.json();
@@ -111,7 +112,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
 
   const deleteConversation = async (convId: string) => {
     try {
-      await fetch(`/api/conversations/${convId}`, { method: "DELETE" });
+      await fetch(`/api/conversations/${convId}`, { method: "DELETE", headers: getAuthHeaders() });
       if (activeConvId === convId) {
         setActiveConvId(null);
         setMessages([]);
@@ -159,7 +160,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
       formData.append("conversationId", activeConvId);
       formData.append("roleId", activeRoleId);
 
-      const res = await fetch("/api/chat", { method: "POST", body: formData });
+      const res = await fetch("/api/chat", { method: "POST", headers: getAuthHeaders(), body: formData });
       const data = await res.json();
 
       if (data.error) {
@@ -194,7 +195,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     try {
       const res = await fetch("/api/chat/text", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId: activeConvId, roleId: activeRoleId, text }),
       });
       const data = await res.json();
@@ -234,7 +235,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     try {
       const res = await fetch("/api/chat/translate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
       const data = await res.json();
@@ -250,7 +251,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     try {
       await fetch("/api/dictionary", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ word: selectedText.trim() }),
       });
       setSelectedText("");

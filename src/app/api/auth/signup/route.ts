@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
       data: { username: username.trim(), passwordHash },
     });
 
+    // Ensure roles exist
+    const roleCount = await prisma.role.count();
+    if (roleCount === 0) {
+      const { seedRoles } = await import("@/lib/seed-roles");
+      await seedRoles();
+    }
+
     await prisma.userProgress.upsert({
       where: { userId: user.id },
       update: {},

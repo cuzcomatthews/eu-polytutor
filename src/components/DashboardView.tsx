@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getAuthHeaders } from "@/context/AuthContext";
 
 interface DashboardProps {
   userLevel: string;
@@ -21,11 +22,11 @@ export default function DashboardView({
   const [syllabus, setSyllabus] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/history")
+    fetch("/api/history", { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((d) => setRecentActivity(d.activity || []))
       .catch(() => {});
-    fetch("/api/syllabus")
+    fetch("/api/syllabus", { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((d) => setSyllabus(d))
       .catch(() => {});
