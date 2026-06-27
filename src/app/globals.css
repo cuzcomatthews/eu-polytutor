@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar: #1a1b2e;
+  --color-sidebar-hover: #252742;
+  --color-sidebar-text: #a5a6c4;
+  --color-sidebar-active: #6366f1;
+  --color-accent: #6366f1;
+  --color-accent-hover: #5558e6;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-card: #ffffff;
+  --color-card-hover: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-input: #f1f5f9;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --background: #f1f5f9;
+  --foreground: #1e293b;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --color-sidebar: #0f172a;
+  --color-sidebar-hover: #1e293b;
+  --color-card: #1e293b;
+  --color-card-hover: #334155;
+  --color-border: #334155;
+  --color-input: #1e293b;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
+    color: var(--color-sidebar-text);
+  }
+
+  .sidebar-link:hover {
+    background: var(--color-sidebar-hover);
+    color: white;
+  }
+
+  .sidebar-link.active {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--color-accent);
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg font-medium text-white transition-all duration-200 cursor-pointer;
+    background: var(--color-accent);
+
+    &:hover {
+      background: var(--color-accent-hover);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 cursor-pointer;
+    background: transparent;
+    color: var(--color-sidebar-text);
+
+    &:hover {
+      background: var(--color-sidebar-hover);
+      color: white;
+    }
+  }
+
+  .btn-danger {
+    @apply px-4 py-2 rounded-lg font-medium text-white transition-all duration-200 cursor-pointer;
+    background: var(--color-error);
+
+    &:hover {
+      background: #dc2626;
+    }
+  }
+
+  .card {
+    @apply rounded-xl p-5 transition-all duration-200;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+  }
+
+  .card:hover {
+    background: var(--color-card-hover);
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 rounded-lg text-sm border transition-colors duration-200;
+    background: var(--color-input);
+    border-color: var(--color-border);
+    color: var(--foreground);
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.5s ease-out;
+  }
+
+  .animate-pulse-ring {
+    animation: pulseRing 2s ease-out infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulseRing {
+  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  70% { box-shadow: 0 0 0 12px rgba(99, 102, 241, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+@keyframes recordPulse {
+  0%, 100% { transform: scale(1); background: var(--color-error); }
+  50% { transform: scale(1.1); background: #dc2626; }
+}
