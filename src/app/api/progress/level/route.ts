@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
       await updateLevel(userId, nextLevel);
       try {
-        await generateSyllabus(nextLevel);
+        await generateSyllabus(nextLevel, userId);
       } catch {}
 
       return NextResponse.json({ level: nextLevel });
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     await updateLevel(userId, level);
     try {
-      await generateSyllabus(level);
+      await generateSyllabus(level, userId);
     } catch {}
 
     return NextResponse.json({ level });

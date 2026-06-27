@@ -61,7 +61,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
   // 2. RAG
   const t2 = performance.now();
-  const ragContext = await queryRag(userText, input.userLevel);
+  const ragContext = await queryRag(userText, input.userLevel, undefined, input.userId);
   metrics.ragMs = performance.now() - t2;
 
   // 3. Memory

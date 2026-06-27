@@ -4,8 +4,8 @@ import { generateResponse } from "./deepseek";
 import { buildSyllabusPrompt, buildExercisePrompt, buildMilestoneEvalPrompt } from "./prompts";
 import env from "./env";
 
-export async function generateSyllabus(level: string): Promise<Record<string, any>> {
-  const ragDocs = await queryRag(level, undefined, 20);
+export async function generateSyllabus(level: string, userId: string): Promise<Record<string, any>> {
+  const ragDocs = await queryRag(level, undefined, 20, userId);
 
   const prompt = await buildSyllabusPrompt(level, ragDocs);
 
@@ -63,7 +63,7 @@ export async function generateExercises(
   keyPoints: string[]
 ): Promise<Record<string, any>> {
   const userLevel = await getCurrentLevel(userId);
-  const ragDocs = await queryRag(topicTitle, userLevel, 10);
+  const ragDocs = await queryRag(topicTitle, userLevel, 10, userId);
 
   const prompt = await buildExercisePrompt(
     topicTitle,
@@ -152,9 +152,10 @@ Respond ONLY in ${nativeName}. Return ONLY valid JSON:
 
 export async function generateMilestoneEval(
   level: string,
-  completedTopics: string[]
+  completedTopics: string[],
+  userId: string
 ): Promise<Record<string, any>> {
-  const ragDocs = await queryRag(level, undefined, 20);
+  const ragDocs = await queryRag(level, undefined, 20, userId);
 
   const prompt = await buildMilestoneEvalPrompt(level, ragDocs, completedTopics);
 

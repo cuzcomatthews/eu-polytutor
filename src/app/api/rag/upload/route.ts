@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { indexDocuments, chunkText, getRagDocuments } from "@/lib/rag";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const level = formData.get("level") as string || "";
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
       sourceType: ext || "unknown",
     }));
 
-    await indexDocuments(chunks, metadatas);
+    await indexDocuments(chunks, metadatas, userId);
 
     return NextResponse.json({
       indexed: chunks.length,
@@ -58,9 +60,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const documents = await getRagDocuments();
+    const { userId } = getUserFromRequest(request);
+    const documents = await getRagDocuments(userId);
     // Deduplicate by source file — show one row per uploaded file, not per chunk
     const seen = new Map<string, any>();
     for (const doc of documents) {

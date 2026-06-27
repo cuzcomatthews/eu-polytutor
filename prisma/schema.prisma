@@ -78,6 +78,7 @@ model ConversationSummary {
 
 model RagDocument {
   id        String   @id @default(uuid())
+  userId    String   @default("")
   content   String   @db.Text
   embedding Unsupported("vector(1024)")
   metadata  Json     @default("{}")

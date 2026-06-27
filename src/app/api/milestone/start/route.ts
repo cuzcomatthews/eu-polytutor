@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const level = body.level || (await getCurrentLevel(userId));
     const completedTopics = body.completedTopics || [];
 
-    const milestone = await generateMilestoneEval(level, completedTopics);
+    const milestone = await generateMilestoneEval(level, completedTopics, userId);
     return NextResponse.json(milestone);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

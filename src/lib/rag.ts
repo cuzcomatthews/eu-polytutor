@@ -13,7 +13,8 @@ export interface RagDocument {
 export async function queryRag(
   query: string,
   level?: string,
-  topK?: number
+  topK?: number,
+  userId?: string
 ): Promise<RagDocument[]> {
   const k = topK || env.ragTopK;
   const threshold = env.ragSimilarityThreshold;
@@ -28,12 +29,13 @@ export async function queryRag(
   const vectorStr = `[${queryEmbedding.join(",")}]`;
 
   let sql: string;
+  const userFilter = userId ? `AND "userId" = '${userId}'` : "";
 
   if (level) {
     sql = `
       SELECT id, content, metadata, 1 - (embedding <=> '${vectorStr}'::vector) AS similarity
       FROM "RagDocument"
-      WHERE metadata->>'level' <= '${level}'
+      WHERE metadata->>'level' <= '${level}' ${userFilter}
       ORDER BY embedding <=> '${vectorStr}'::vector
       LIMIT ${k}
     `;
@@ -41,6 +43,7 @@ export async function queryRag(
     sql = `
       SELECT id, content, metadata, 1 - (embedding <=> '${vectorStr}'::vector) AS similarity
       FROM "RagDocument"
+      WHERE 1=1 ${userFilter}
       ORDER BY embedding <=> '${vectorStr}'::vector
       LIMIT ${k}
     `;
@@ -71,6 +74,7 @@ export async function queryRag(
 export async function indexDocuments(
   texts: string[],
   metadatas: Record<string, any>[],
+  userId: string,
   ids?: string[]
 ): Promise<void> {
   if (!texts.length) return;
@@ -88,9 +92,10 @@ export async function indexDocuments(
     const escapedMeta = JSON.stringify(metaList[i]).replace(/'/g, "''");
 
     await prisma.$executeRawUnsafe(`
-      INSERT INTO "RagDocument" (id, content, embedding, metadata, "createdAt")
-      VALUES ('${docIds[i]}', '${escapedContent}', '${vectorStr}'::vector, '${escapedMeta}'::jsonb, NOW())
+      INSERT INTO "RagDocument" (id, "userId", content, embedding, metadata, "createdAt")
+      VALUES ('${docIds[i]}', '${userId}', '${escapedContent}', '${vectorStr}'::vector, '${escapedMeta}'::jsonb, NOW())
       ON CONFLICT (id) DO UPDATE SET
+        "userId" = EXCLUDED."userId",
         content = EXCLUDED.content,
         embedding = EXCLUDED.embedding,
         metadata = EXCLUDED.metadata
@@ -98,13 +103,13 @@ export async function indexDocuments(
   }
 }
 
-export async function deleteRagDocument(id: string): Promise<void> {
+export async function deleteRagDocument(id: string, userId: string): Promise<void> {
   await prisma.$executeRawUnsafe(
-    `DELETE FROM "RagDocument" WHERE id = '${id}'`
+    `DELETE FROM "RagDocument" WHERE id = '${id}' AND "userId" = '${userId}'`
   );
 }
 
-export async function getRagDocuments(): Promise<{
+export async function getRagDocuments(userId: string): Promise<{
   id: string;
   metadata: Record<string, any>;
   createdAt: string;
@@ -113,7 +118,7 @@ export async function getRagDocuments(): Promise<{
     id: string;
     metadata: Record<string, any>;
     createdAt: Date;
-  }[]>(`SELECT id, metadata, "createdAt" FROM "RagDocument" ORDER BY "createdAt" DESC`);
+  }[]>(`SELECT id, metadata, "createdAt" FROM "RagDocument" WHERE "userId" = '${userId}' ORDER BY "createdAt" DESC`);
 
   return rows.map((r) => ({
     id: r.id,
@@ -122,8 +127,8 @@ export async function getRagDocuments(): Promise<{
   }));
 }
 
-export async function deleteAllRagDocuments(): Promise<void> {
-  await prisma.$executeRawUnsafe(`DELETE FROM "RagDocument"`);
+export async function deleteAllRagDocuments(userId: string): Promise<void> {
+  await prisma.$executeRawUnsafe(`DELETE FROM "RagDocument" WHERE "userId" = '${userId}'`);
 }
 
 export function chunkText(text: string): string[] {

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       if (next) {
         await updateLevel(userId, next);
         try {
-          await generateSyllabus(next);
+          await generateSyllabus(next, userId);
         } catch {}
       }
     }
