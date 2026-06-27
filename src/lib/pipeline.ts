@@ -1,5 +1,5 @@
 import { transcribeAudio } from "./deepgram-stt";
-import { synthesizeSpeech } from "./deepgram-tts";
+import { synthesizeSpeech, synthesizeSpeechLong } from "./deepgram-tts";
 import { generateResponse } from "./deepseek";
 import { queryRag } from "./rag";
 import { saveTurn, getRecentTurns, getTotalTurns, generateSummary, getSummary } from "./memory";
@@ -140,16 +140,12 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         else if (role.name === "Female Companion" && user.companionFVoice) voiceId = user.companionFVoice;
       }
 
-      // Truncate for TTS (Deepgram max 2000 chars)
-      const speakText = responseText.length > 2000 ? responseText.slice(0, 1997) + "..." : responseText;
       try {
-        const audioBuffer = await synthesizeSpeech(speakText, voiceId);
-        audioBase64 = audioBuffer.toString("base64");
+        audioBase64 = (await synthesizeSpeechLong(responseText, voiceId)).toString("base64");
       } catch (ttsErr: any) {
         console.error("TTS failed with user voice, retrying with default:", ttsErr?.message);
         try {
-          const audioBuffer = await synthesizeSpeech(speakText, role.voiceId);
-          audioBase64 = audioBuffer.toString("base64");
+          audioBase64 = (await synthesizeSpeechLong(responseText, role.voiceId)).toString("base64");
         } catch (fallbackErr: any) {
           console.error("TTS also failed with default voice:", fallbackErr?.message);
         }

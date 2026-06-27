@@ -1,5 +1,7 @@
 import env from "./env";
 
+const MAX_CHARS = 1900;
+
 export async function synthesizeSpeech(
   text: string,
   voiceId: string
@@ -29,6 +31,69 @@ export async function synthesizeSpeech(
 
   const pcmBytes = Buffer.from(await response.arrayBuffer());
   return pcmToWav(pcmBytes, 24000);
+}
+
+export async function synthesizeSpeechLong(
+  text: string,
+  voiceId: string
+): Promise<Buffer> {
+  if (text.length <= MAX_CHARS) {
+    return synthesizeSpeech(text, voiceId);
+  }
+
+  // Split at sentence boundaries
+  const chunks: string[] = [];
+  let remaining = text;
+  while (remaining.length > MAX_CHARS) {
+    const cutPoint = remaining.lastIndexOf(".", MAX_CHARS);
+    const idx = cutPoint > MAX_CHARS / 2 ? cutPoint + 1 : MAX_CHARS;
+    chunks.push(remaining.slice(0, idx).trim());
+    remaining = remaining.slice(idx).trim();
+  }
+  if (remaining.trim()) chunks.push(remaining.trim());
+
+  const wavs: Buffer[] = [];
+  for (const chunk of chunks) {
+    const wav = await synthesizeSpeech(chunk, voiceId);
+    wavs.push(wav);
+  }
+
+  return concatWavs(wavs);
+}
+
+function concatWavs(wavs: Buffer[]): Buffer {
+  if (wavs.length === 0) return Buffer.alloc(0);
+  if (wavs.length === 1) return wavs[0];
+
+  // Strip WAV headers from all but first, concatenate PCM data
+  const first = wavs[0];
+  let totalData = 0;
+  const dataBuffers: Buffer[] = [];
+
+  for (let i = 0; i < wavs.length; i++) {
+    if (i === 0) {
+      dataBuffers.push(first.subarray(44));
+      totalData += first.length - 44;
+    } else {
+      const data = wavs[i].subarray(44);
+      dataBuffers.push(data);
+      totalData += data.length;
+    }
+  }
+
+  // Update total size in first header
+  const result = Buffer.alloc(44 + totalData);
+  first.copy(result, 0, 0, 44);
+  result.writeUInt32LE(36 + totalData, 4);
+  result.writeUInt32LE(totalData, 40);
+
+  let offset = 44;
+  for (const buf of dataBuffers) {
+    buf.copy(result, offset);
+    offset += buf.length;
+  }
+
+  return result;
 }
 
 function pcmToWav(pcm: Buffer, sampleRate: number): Buffer {

@@ -18,8 +18,12 @@ export async function POST(request: NextRequest) {
       where: { id: { in: wordIds.slice(0, 20) }, userId },
     });
 
-    const targetName = env.targetLanguage === "de" ? "German" : env.targetLanguage;
-    const nativeName = env.nativeLanguage === "es" ? "Spanish" : env.nativeLanguage;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const targetLang = user?.targetLanguage || env.targetLanguage;
+    const nativeLang = user?.nativeLanguage || env.nativeLanguage;
+
+    const targetName = targetLang === "de" ? "German" : targetLang === "fr" ? "French" : targetLang === "it" ? "Italian" : targetLang === "pt" ? "Portuguese" : targetLang === "ja" ? "Japanese" : targetLang === "ko" ? "Korean" : targetLang === "zh" ? "Chinese" : targetLang === "es" ? "Spanish" : targetLang === "en" ? "English" : targetLang;
+    const nativeName = nativeLang === "de" ? "German" : nativeLang === "fr" ? "French" : nativeLang === "it" ? "Italian" : nativeLang === "pt" ? "Portuguese" : nativeLang === "ja" ? "Japanese" : nativeLang === "ko" ? "Korean" : nativeLang === "zh" ? "Chinese" : nativeLang === "es" ? "Spanish" : nativeLang === "en" ? "English" : nativeLang;
 
     const wordList = entries.map((e) => `${e.word} (${e.translation})`).join(", ");
     const exerciseCount = entries.length <= 3 ? 3 : Math.min(15, entries.length * 2);

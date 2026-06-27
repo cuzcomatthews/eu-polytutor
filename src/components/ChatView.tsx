@@ -205,6 +205,8 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
         setMessages((prev) => [...prev, { role: "assistant", content: data.responseText, audioBase64: data.audioBase64 }]);
         setMetrics(data.metrics);
         if (data.audioBase64) playAudio(data.audioBase64);
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${data.error}` }]);
       }
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Connection error." }]);

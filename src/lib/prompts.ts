@@ -288,10 +288,12 @@ Create 10-15 diverse exercises covering a representative sample of the completed
 }
 
 export async function buildDictionaryEntryPrompt(
-  word: string
+  word: string,
+  targetLang: string,
+  nativeLang: string
 ): Promise<string> {
-  const targetName = LANGUAGE_NAMES[env.targetLanguage] || env.targetLanguage;
-  const nativeName = NATIVE_NAMES[env.nativeLanguage] || env.nativeLanguage;
+  const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
+  const nativeName = NATIVE_NAMES[nativeLang] || nativeLang;
 
   return `Translate the following word and provide a short example. Return ONLY valid JSON:
 {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { generateResponse } from "@/lib/deepseek";
 import { buildDictionaryEntryPrompt } from "@/lib/prompts";
 import { getUserFromRequest } from "@/lib/auth";
+import env from "@/lib/env";
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,8 +73,12 @@ export async function POST(request: NextRequest) {
     let exampleSentence: string | null = null;
     let difficulty = 1;
 
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const targetLang = user?.targetLanguage || env.targetLanguage;
+    const nativeLang = user?.nativeLanguage || env.nativeLanguage;
+
     try {
-      const prompt = await buildDictionaryEntryPrompt(word);
+      const prompt = await buildDictionaryEntryPrompt(word, targetLang, nativeLang);
       const response = await generateResponse(
         [{ role: "user", content: prompt }],
         300,
