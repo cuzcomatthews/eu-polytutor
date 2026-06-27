@@ -193,6 +193,9 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setIsProcessing(true);
 
+    // Safety: clear processing state after 30s
+    const timer = setTimeout(() => setIsProcessing(false), 30000);
+
     try {
       const res = await fetch("/api/chat/text", {
         method: "POST",
@@ -211,6 +214,7 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Connection error." }]);
     } finally {
+      clearTimeout(timer);
       setIsProcessing(false);
       onProgressUpdate();
     }
