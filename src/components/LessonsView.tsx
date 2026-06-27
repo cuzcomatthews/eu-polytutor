@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { ExerciseRenderer } from "@/components/exercises/ExerciseRenderer";
 import { getAuthHeaders } from "@/context/AuthContext";
 
@@ -21,12 +22,12 @@ interface Props {
 
 export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate }: Props) {
   const [syllabus, setSyllabus] = useState<any>(null);
-  const [exercises, setExercises] = useState<any>(null);
   const [activeTopic, setActiveTopic] = useState<Topic | null>(null);
   const [milestone, setMilestone] = useState<any>(null);
   const [milestoneResults, setMilestoneResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatingSyllabus, setGeneratingSyllabus] = useState(false);
+  const router = useRouter();
 
   const fetchSyllabus = useCallback(async () => {
     try {
@@ -51,31 +52,14 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
     setGeneratingSyllabus(false);
   };
 
-  const startLesson = async (topic: Topic) => {
-    setActiveTopic(topic);
-    setExercises(null);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/lessons/start", {
-        method: "POST",
-        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topicId: topic.id,
-          topicTitle: topic.title,
-          topicDescription: topic.description,
-          keyPoints: topic.keyPoints,
-        }),
-      });
-      const data = await res.json();
-      setExercises(data);
-    } catch {}
-    setLoading(false);
-  };
-
-  const closeLesson = () => {
-    setExercises(null);
-    setActiveTopic(null);
-    onProgressUpdate();
+  const startLesson = (topic: Topic) => {
+    const params = new URLSearchParams({
+      topicId: topic.id,
+      title: topic.title,
+      desc: topic.description,
+      keyPoints: JSON.stringify(topic.keyPoints),
+    });
+    router.push(`/lesson?${params.toString()}`);
   };
 
   const startMilestone = async () => {
@@ -207,17 +191,6 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
         </div>
       )}
 
-      {/* Lesson Overlay */}
-      {exercises?.exercises && activeTopic && !loading && (
-        <LessonOverlay
-          topic={activeTopic}
-          exercises={exercises}
-          teachingNotes={exercises.teaching_notes}
-          onClose={closeLesson}
-          onProgress={onProgressUpdate}
-        />
-      )}
-
       {/* Milestone */}
       {milestone?.exercises && !loading && (
         <LessonOverlay
@@ -281,8 +254,10 @@ function LessonOverlay({
       let expectedAnswer = "";
 
       if (ex.kind === "multiple_choice") {
-        userAnswer = String(answer.selected_index);
-        expectedAnswer = String(ex.payload.correct_index);
+        const options = ex.payload.options as string[];
+        const correctIdx = ex.payload.correct_index as number;
+        userAnswer = options[answer.selected_index as number];
+        expectedAnswer = options[correctIdx];
       } else if (ex.kind === "fill_blank" || ex.kind === "type_answer") {
         userAnswer = answer.text as string;
         expectedAnswer = (ex.payload.answers as string[])?.[0] || "";

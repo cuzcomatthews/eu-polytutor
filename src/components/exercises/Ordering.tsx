@@ -1,115 +1,101 @@
 import { useState, useEffect } from "react";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 import type { ExerciseProps } from "./types";
-
-function SortableItem({ id, label, pos }: { id: number; label: string; pos: number }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : undefined,
-    opacity: isDragging ? 0.8 : 1,
-  };
-
-  return (
-    <li
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 rounded-xl border-2 px-3 py-3 text-sm font-medium select-none"
-      onPointerDown={(e) => {
-        if ((e.target as HTMLElement).closest("[data-drag-handle]")) return;
-        e.preventDefault();
-      }}
-    >
-      <span
-        {...attributes}
-        {...listeners}
-        data-drag-handle
-        className="cursor-grab active:cursor-grabbing touch-none px-1 py-0.5 rounded opacity-40 hover:opacity-80 text-lg select-none"
-      >
-        ⋮⋮
-      </span>
-      <span className="w-6 text-center text-xs font-bold opacity-40">{pos + 1}.</span>
-      <span className="flex-1">{label}</span>
-    </li>
-  );
-}
 
 export function Ordering({ exercise, onAnswerChange, disabled }: ExerciseProps) {
   const payload = exercise.payload as Record<string, unknown>;
   const items = (payload.items as string[]) ?? [];
   const hint = payload.hint as string | undefined;
-  const [order, setOrder] = useState<number[]>(items.map((_, i) => i));
+  const [order, setOrder] = useState<number[]>([]);
+  const [available, setAvailable] = useState<number[]>(items.map((_, i) => i));
+  const [showHint, setShowHint] = useState(false);
 
   useEffect(() => {
-    onAnswerChange({ order });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    onAnswerChange(order.length > 0 ? { order } : null);
+  }, [order, onAnswerChange]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
+  const addWord = (itemIdx: number) => {
     if (disabled) return;
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIdx = order.indexOf(active.id as number);
-    const newIdx = order.indexOf(over.id as number);
-    const next = [...order];
-    [next[oldIdx], next[newIdx]] = [next[newIdx], next[oldIdx]];
-    setOrder(next);
-    onAnswerChange({ order: next });
+    setOrder((prev) => [...prev, itemIdx]);
+    setAvailable((prev) => prev.filter((i) => i !== itemIdx));
   };
+
+  const removeWord = (posIdx: number) => {
+    if (disabled) return;
+    const itemIdx = order[posIdx];
+    setOrder((prev) => prev.filter((_, i) => i !== posIdx));
+    setAvailable((prev) => [...prev, itemIdx]);
+  };
+
+  // Shuffle available on mount
+  const [shuffledAvailable] = useState(() => {
+    const arr = [...available];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  });
 
   return (
     <div>
       {hint && (
-        <p className="text-base font-medium mb-3 p-3 rounded-lg text-center"
-          style={{ background: "var(--color-input)", color: "var(--color-sidebar-text)" }}>
-          {hint}
-        </p>
+        <div className="mb-3">
+          {!showHint ? (
+            <button onClick={() => setShowHint(true)} className="text-xs opacity-40 hover:opacity-70 underline">
+              Show Hint
+            </button>
+          ) : (
+            <p className="text-sm p-2 rounded-lg" style={{ background: "var(--color-input)", color: "var(--color-sidebar-text)" }}>
+              {hint}
+            </p>
+          )}
+        </div>
       )}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis]}
-      >
-        <SortableContext items={order} strategy={verticalListSortingStrategy}>
-          <ol className="space-y-2">
-            {order.map((itemIdx, posIdx) => (
-              <SortableItem
-                key={itemIdx}
-                id={itemIdx}
-                label={items[itemIdx]}
-                pos={posIdx}
-              />
-            ))}
-          </ol>
-        </SortableContext>
-      </DndContext>
-      <p className="text-xs mt-2 opacity-40 text-center">
-        Drag handles (⋮⋮) to reorder
-      </p>
+
+      {/* Answer row */}
+      <div className="flex flex-wrap gap-2 min-h-[48px] p-3 rounded-xl border-2 mb-3"
+        style={{
+          borderColor: order.length > 0 ? "var(--color-accent)" : "var(--color-border)",
+          borderStyle: order.length === 0 ? "dashed" : "solid",
+          background: "var(--color-card)",
+        }}>
+        {order.map((itemIdx, posIdx) => (
+          <button
+            key={`selected-${itemIdx}-${posIdx}`}
+            onClick={() => removeWord(posIdx)}
+            disabled={disabled}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition"
+            style={{
+              borderColor: "var(--color-accent)",
+              background: "rgba(99,102,241,0.1)",
+            }}
+          >
+            {items[itemIdx]}
+          </button>
+        ))}
+        {order.length === 0 && (
+          <span className="text-xs opacity-30 self-center">Tap words below to build the sentence</span>
+        )}
+      </div>
+
+      {/* Word bank */}
+      <div className="flex flex-wrap gap-2">
+        {(order.length === 0 ? shuffledAvailable : available).map((itemIdx) => (
+          <button
+            key={`word-${itemIdx}`}
+            onClick={() => addWord(itemIdx)}
+            disabled={disabled}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition hover:shadow-sm"
+            style={{
+              borderColor: "var(--color-border)",
+              background: "var(--color-input)",
+            }}
+          >
+            {items[itemIdx]}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

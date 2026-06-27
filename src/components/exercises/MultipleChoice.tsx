@@ -5,9 +5,9 @@ import type { ExerciseProps } from "./types";
 export function MultipleChoice({ exercise, onAnswerChange, disabled }: ExerciseProps) {
   const payload = exercise.payload as Record<string, unknown>;
   const options = (payload.options as string[]) ?? [];
-  const correctIndex = payload.correct_index as number;
   const hint = payload.hint as string | undefined;
   const [selected, setSelected] = useState<number | null>(null);
+  const [showHint, setShowHint] = useState(false);
 
   const choose = (idx: number) => {
     if (disabled) return;
@@ -18,10 +18,17 @@ export function MultipleChoice({ exercise, onAnswerChange, disabled }: ExerciseP
   return (
     <div>
       {hint && (
-        <p className="text-base font-medium mb-3 p-3 rounded-lg text-center"
-          style={{ background: "var(--color-input)", color: "var(--color-sidebar-text)" }}>
-          {hint}
-        </p>
+        <div className="mb-3">
+          {!showHint ? (
+            <button onClick={() => setShowHint(true)} className="text-xs opacity-40 hover:opacity-70 underline">
+              Show Hint
+            </button>
+          ) : (
+            <p className="text-xs p-2 rounded-lg" style={{ background: "var(--color-input)", color: "var(--color-sidebar-text)" }}>
+              {hint}
+            </p>
+          )}
+        </div>
       )}
       <div className="grid grid-cols-1 gap-3">
         {options.map((opt, idx) => (

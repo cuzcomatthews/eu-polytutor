@@ -8,12 +8,10 @@ export function FillBlank({ exercise, onAnswerChange, disabled }: ExerciseProps)
   const hint = payload.hint as string | undefined;
   const [before, after] = sentence.split("___");
   const [value, setValue] = useState("");
+  const [showHint, setShowHint] = useState(false);
 
   return (
     <div>
-      {hint && (
-        <p className="text-xs mb-3 opacity-60">{hint}</p>
-      )}
       <p className="text-xl leading-relaxed">
         <span>{before}</span>
         <input
@@ -32,6 +30,19 @@ export function FillBlank({ exercise, onAnswerChange, disabled }: ExerciseProps)
         />
         <span>{after}</span>
       </p>
+      {hint && (
+        <div className="mt-3">
+          {!showHint ? (
+            <button onClick={() => setShowHint(true)} className="text-xs opacity-40 hover:opacity-70 underline">
+              Show Hint
+            </button>
+          ) : (
+            <p className="text-xs p-2 rounded-lg" style={{ background: "var(--color-input)", color: "var(--color-sidebar-text)" }}>
+              {hint}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -6,14 +6,22 @@ export function TypeAnswer({ exercise, onAnswerChange, disabled }: ExerciseProps
   const payload = exercise.payload as Record<string, unknown>;
   const hint = payload.hint as string | undefined;
   const [value, setValue] = useState("");
+  const [showHint, setShowHint] = useState(false);
 
   return (
     <div>
       {hint && (
-        <p className="text-base font-medium mb-3 p-3 rounded-lg text-center"
-          style={{ background: "var(--color-input)", color: "var(--color-sidebar-text)" }}>
-          {hint}
-        </p>
+        <div className="mb-3">
+          {!showHint ? (
+            <button onClick={() => setShowHint(true)} className="text-xs opacity-40 hover:opacity-70 underline">
+              Show Hint
+            </button>
+          ) : (
+            <p className="text-sm p-2 rounded-lg" style={{ background: "var(--color-input)", color: "var(--color-sidebar-text)" }}>
+              {hint}
+            </p>
+          )}
+        </div>
       )}
       <input
         type="text"

@@ -112,7 +112,12 @@ export async function evaluateAnswer(
     const userLower = userAnswer.toLowerCase().trim();
     const expectedLower = expectedAnswer.toLowerCase().trim();
     const correct = userLower === expectedLower;
-    return { correct, feedback: correct ? `Correct! ✓` : `Incorrect. The answer was: ${expectedAnswer}` };
+    return {
+      correct,
+      feedback: correct
+        ? `Correct! ✓`
+        : `Incorrect. The correct answer is: ${expectedAnswer}`
+    };
   }
 
   const prompt = `You are evaluating a language exercise answer. Exercise type: ${exerciseType}
