@@ -200,14 +200,15 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
         body: JSON.stringify({ conversationId: activeConvId, roleId: activeRoleId, text }),
       });
       const data = await res.json();
+      const responseContent = data?.responseText || data?.text || JSON.stringify(data);
 
-      if (!data.error) {
-        setMessages((prev) => [...prev, { role: "assistant", content: data.responseText, audioBase64: data.audioBase64 }]);
-        setMetrics(data.metrics);
-        if (data.audioBase64) playAudio(data.audioBase64);
-      } else {
-        setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${data.error}` }]);
-      }
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: data?.error ? `Error: ${data.error}` : responseContent,
+        audioBase64: data?.audioBase64,
+      }]);
+      setMetrics(data?.metrics);
+      if (data?.audioBase64) playAudio(data.audioBase64);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Connection error." }]);
     } finally {

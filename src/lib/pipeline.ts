@@ -129,22 +129,22 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   if (!input.skipTts) {
     try {
       let voiceId = role.voiceId;
-      const user = await prisma.user.findUnique({
-        where: { id: input.userId },
-        select: { professorVoice: true, tutorVoice: true, companionMVoice: true, companionFVoice: true },
-      });
-      if (user) {
-        if (role.name === "Professor" && user.professorVoice) voiceId = user.professorVoice;
-        else if (role.name.includes("Tutor") && user.tutorVoice) voiceId = user.tutorVoice;
-        else if (role.name === "Male Companion" && user.companionMVoice) voiceId = user.companionMVoice;
-        else if (role.name === "Female Companion" && user.companionFVoice) voiceId = user.companionFVoice;
-      }
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: input.userId },
+          select: { professorVoice: true, tutorVoice: true, companionMVoice: true, companionFVoice: true },
+        });
+        if (user) {
+          if (role.name === "Professor" && user.professorVoice) voiceId = user.professorVoice;
+          else if (role.name.includes("Tutor") && user.tutorVoice) voiceId = user.tutorVoice;
+          else if (role.name === "Male Companion" && user.companionMVoice) voiceId = user.companionMVoice;
+          else if (role.name === "Female Companion" && user.companionFVoice) voiceId = user.companionFVoice;
+        }
+      } catch {}
 
-      const speakText = responseText.length > 2000 ? responseText.slice(0, 1997) + "..." : responseText;
-      audioBase64 = (await synthesizeSpeech(speakText, voiceId)).toString("base64");
-    } catch (ttsErr: any) {
-      console.error("TTS failed:", ttsErr?.message || ttsErr);
-    }
+      const audioBuffer = await synthesizeSpeech(responseText, voiceId);
+      audioBase64 = audioBuffer.toString("base64");
+    } catch {}
   }
   metrics.ttsMs = performance.now() - t4;
 
