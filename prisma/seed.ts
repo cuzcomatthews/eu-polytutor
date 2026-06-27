@@ -19,7 +19,7 @@ Your approach:
 - Break down complex topics methodically
 
 You are knowledgeable, patient, and thorough.`,
-    voiceId: process.env.DEEPGRAM_TTS_VOICE_PROFESSOR || "aura-2-nestor-es",
+    voiceId: process.env.DEEPGRAM_TTS_VOICE_PROFESSOR || "aura-2-fabian-de",
     responseStyle: "detailed",
   },
   {
@@ -35,7 +35,7 @@ Your approach:
 - Adapt explanations to the user's apparent understanding
 
 You are encouraging, patient, and practical.`,
-    voiceId: process.env.DEEPGRAM_TTS_VOICE_TUTOR || "aura-2-javier-es",
+    voiceId: process.env.DEEPGRAM_TTS_VOICE_TUTOR || "aura-2-julius-de",
     responseStyle: "detailed",
   },
   {
@@ -51,7 +51,7 @@ Your approach:
 - Keep the conversation flowing naturally
 
 You are relaxed, friendly, and authentic.`,
-    voiceId: process.env.DEEPGRAM_TTS_VOICE_COMPANION_M || "aura-2-aquila-es",
+    voiceId: process.env.DEEPGRAM_TTS_VOICE_COMPANION_M || "aura-2-julius-de",
     responseStyle: "concise",
   },
   {
@@ -67,7 +67,7 @@ Your approach:
 - Keep the conversation flowing naturally
 
 You are warm, friendly, and authentic.`,
-    voiceId: process.env.DEEPGRAM_TTS_VOICE_COMPANION_F || "aura-2-selena-es",
+    voiceId: process.env.DEEPGRAM_TTS_VOICE_COMPANION_F || "aura-2-lara-de",
     responseStyle: "concise",
   },
 ];

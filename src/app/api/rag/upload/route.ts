@@ -11,14 +11,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
     }
 
-    const text = await file.text();
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    let text = "";
+
+    if (ext === "pdf") {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      try {
+        const pdfParse = (await import("pdf-parse")) as any;
+        const pdfData = await pdfParse(buffer);
+        text = pdfData.text;
+      } catch (pdfErr: any) {
+        return NextResponse.json(
+          { error: `Failed to parse PDF: ${pdfErr.message}` },
+          { status: 400 }
+        );
+      }
+    } else {
+      text = await file.text();
+    }
+
+    if (!text || !text.trim()) {
+      return NextResponse.json(
+        { error: "No text content found in file" },
+        { status: 400 }
+      );
+    }
+
     const chunks = chunkText(text);
 
     const metadatas = chunks.map((_, i) => ({
       sourceFile: file.name,
       level,
       chunkIndex: i,
-      sourceType: file.name.split(".").pop() || "unknown",
+      sourceType: ext || "unknown",
     }));
 
     await indexDocuments(chunks, metadatas);
@@ -28,6 +53,7 @@ export async function POST(request: NextRequest) {
       fileName: file.name,
     });
   } catch (error: any) {
+    console.error("RAG upload error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
