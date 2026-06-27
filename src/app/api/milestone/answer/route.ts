@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateAnswer, getCurrentLevel, getNextLevel, updateLevel, generateSyllabus } from "@/lib/syllabus";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
     const body = await request.json();
     const { answers } = body;
 
@@ -20,7 +22,8 @@ export async function POST(request: NextRequest) {
       const result = await evaluateAnswer(
         ans.userAnswer,
         ans.expectedAnswer,
-        ans.exerciseType || "write"
+        ans.exerciseType || "type_answer",
+        userId
       );
       results.push(result);
       if (result.correct) correctCount++;
@@ -30,10 +33,10 @@ export async function POST(request: NextRequest) {
     const passed = score >= 70;
 
     if (passed) {
-      const currentLevel = await getCurrentLevel();
+      const currentLevel = await getCurrentLevel(userId);
       const next = getNextLevel(currentLevel);
       if (next) {
-        await updateLevel(next);
+        await updateLevel(userId, next);
         try {
           await generateSyllabus(next);
         } catch {}

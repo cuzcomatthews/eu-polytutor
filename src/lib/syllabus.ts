@@ -42,26 +42,27 @@ export async function getActiveSyllabus(): Promise<Record<string, any> | null> {
   return syllabus ? (syllabus.content as Record<string, any>) : null;
 }
 
-export async function getCurrentLevel(): Promise<string> {
-  const progress = await prisma.userProgress.findUnique({ where: { id: "singleton" } });
+export async function getCurrentLevel(userId: string): Promise<string> {
+  const progress = await prisma.userProgress.findUnique({ where: { userId } });
   return progress?.cefrLevel || "A1.1";
 }
 
-export async function updateLevel(newLevel: string): Promise<void> {
+export async function updateLevel(userId: string, newLevel: string): Promise<void> {
   await prisma.userProgress.upsert({
-    where: { id: "singleton" },
+    where: { userId },
     update: { cefrLevel: newLevel },
-    create: { id: "singleton", cefrLevel: newLevel },
+    create: { userId, cefrLevel: newLevel },
   });
 }
 
 export async function generateExercises(
+  userId: string,
   topicId: string,
   topicTitle: string,
   topicDescription: string,
   keyPoints: string[]
 ): Promise<Record<string, any>> {
-  const userLevel = await getCurrentLevel();
+  const userLevel = await getCurrentLevel(userId);
   const ragDocs = await queryRag(topicTitle, userLevel, 10);
 
   const prompt = await buildExercisePrompt(
@@ -87,19 +88,43 @@ export async function generateExercises(
 export async function evaluateAnswer(
   userAnswer: string,
   expectedAnswer: string,
-  exerciseType: string
+  exerciseType: string,
+  userId: string
 ): Promise<{ correct: boolean; feedback: string }> {
+  const nativeLang = env.nativeLanguage;
+  const nativeName =
+    nativeLang === "de" ? "German" :
+    nativeLang === "fr" ? "French" :
+    nativeLang === "it" ? "Italian" :
+    nativeLang === "pt" ? "Portuguese" :
+    nativeLang === "ja" ? "Japanese" :
+    nativeLang === "ko" ? "Korean" :
+    nativeLang === "zh" ? "Chinese" :
+    nativeLang === "es" ? "Spanish" :
+    nativeLang === "en" ? "English" :
+    nativeLang;
+
+  if (exerciseType === "match_pairs") {
+    return { correct: userAnswer === "all_matched", feedback: "All pairs matched!" };
+  }
+
+  if (exerciseType === "multiple_choice" || exerciseType === "fill_blank") {
+    const userLower = userAnswer.toLowerCase().trim();
+    const expectedLower = expectedAnswer.toLowerCase().trim();
+    const correct = userLower === expectedLower;
+    return { correct, feedback: correct ? `Correct! ✓` : `Incorrect. The answer was: ${expectedAnswer}` };
+  }
+
   const prompt = `You are evaluating a language exercise answer. Exercise type: ${exerciseType}
 
 Expected answer: "${expectedAnswer}"
 User's answer: "${userAnswer}"
 
-For fill_blank, pick_translation: the answer must match exactly or be a valid alternative.
-For reorder: the words must be in the correct order.
-For write: accept minor typos, evaluate grammar and meaning.
-For match_pairs: already evaluated client-side.
+For type_answer: accept minor typos and alternative phrasings, evaluate grammar and meaning.
+For ordering: the items must be in the correct order.
 
-Return ONLY valid JSON: { "correct": true/false, "feedback": "brief feedback in the user's native language" }`;
+Respond ONLY in ${nativeName}. Return ONLY valid JSON:
+{ "correct": true/false, "feedback": "brief feedback in ${nativeName}" }`;
 
   const response = await generateResponse(
     [{ role: "user", content: prompt }],

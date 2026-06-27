@@ -195,7 +195,7 @@ export async function buildExercisePrompt(
     .map((d) => d.content.slice(0, 400))
     .join("\n");
 
-  return `You are a ${targetName} teacher creating exercises for level ${userLevel}.
+  return `You are a ${targetName} teacher creating Duolingo-style exercises for level ${userLevel}.
 
 Topic: ${topicTitle}
 Description: ${topicDescription}
@@ -204,47 +204,48 @@ Key points: ${keyPoints.join(", ")}
 Source material from curriculum:
 ${ragContent}
 
-Create 5-8 diverse exercises. Return ONLY valid JSON:
+Create 5-8 diverse exercises. Mix exercise kinds for variety: prefer 2 multiple_choice, 1-2 fill_blank, 1 match_pairs, plus 1-2 of {ordering, type_answer}.
+
+Per-kind payload shape (must match exactly):
+- multiple_choice: {"options": ["a","b","c","d"], "correct_index": 0, "hint": "${targetName} phrase this exercise tests"}
+- fill_blank:     {"sentence": "${targetName} sentence with ___ for blank", "answers": ["correct"], "hint": "optional ${nativeName} hint"}
+- match_pairs:    {"pairs": [{"left": "${targetName} word", "right": "${nativeName} translation"}]}  // 3-5 pairs
+- ordering:       {"items": ["${targetName} word a","${targetName} word b","${targetName} word c","${targetName} word d"], "correct_order": [0,1,2,3], "hint": "Translation in ${nativeName} the user should produce"}
+- type_answer:    {"answers": ["accepted answer"], "hint": "${nativeName} sentence the user must translate to ${targetName}"}
+
+Return ONLY valid JSON (no markdown, no explanation):
 {
+  "teaching_notes": "2-3 sentence mini-lesson in ${nativeName} explaining the key concepts before exercises",
   "exercises": [
     {
-      "type": "fill_blank",
-      "prompt": "Complete the sentence (instruction in ${nativeName})",
-      "sentence": "Sentence with ___ for the blank",
-      "answer": "the correct word",
-      "options": ["option1", "option2", "option3", "option4"],
-      "explanation": "Short explanation in ${nativeName}"
+      "kind": "multiple_choice",
+      "prompt": "Instruction in ${nativeName}",
+      "payload": { "options": ["a","b","c","d"], "correct_index": 0, "hint": "..." }
     },
     {
-      "type": "match_pairs",
-      "prompt": "Match the pairs",
-      "pairs": [
-        {"left": "${targetName} word", "right": "${nativeName} translation"}
-      ]
+      "kind": "fill_blank",
+      "prompt": "Instruction in ${nativeName}",
+      "payload": { "sentence": "... ___ ...", "answers": ["..."], "hint": "..." }
     },
     {
-      "type": "reorder",
-      "prompt": "Put the words in correct order",
-      "words": ["word1", "word2", "word3"],
-      "answer": "The correct sentence"
+      "kind": "match_pairs",
+      "prompt": "Instruction in ${nativeName}",
+      "payload": { "pairs": [{"left": "...", "right": "..."}] }
     },
     {
-      "type": "pick_translation",
-      "prompt": "Choose the correct translation",
-      "sentence": "${targetName} sentence",
-      "answer": "correct ${nativeName} translation",
-      "options": ["option1", "option2", "option3", "option4"]
+      "kind": "ordering",
+      "prompt": "Reorder to form the correct sentence",
+      "payload": { "items": [...], "correct_order": [...], "hint": "Translation in ${nativeName}" }
     },
     {
-      "type": "write",
+      "kind": "type_answer",
       "prompt": "Write this in ${targetName}",
-      "sentence": "${nativeName} sentence to translate",
-      "expectedAnswer": "Expected ${targetName} answer"
+      "payload": { "answers": ["..."], "hint": "${nativeName} sentence to translate" }
     }
   ]
 }
 
-Mix exercise types. Ensure all content matches ${userLevel} level.`;
+All prompts, hints, and explanations must be in ${nativeName}. All ${targetName} content must be correct for ${userLevel} level.`;
 }
 
 export async function buildMilestoneEvalPrompt(
@@ -265,12 +266,13 @@ The user has completed these topics: ${completedTopics.join(", ")}.
 Source material from curriculum:
 ${ragContent}
 
-Create 10-15 diverse exercises covering a representative sample of the completed topics. Return ONLY valid JSON:
+Create 10-15 diverse exercises covering a representative sample of the completed topics. Use the same per-kind payload shapes as exercise generation. Return ONLY valid JSON:
 {
   "exercises": [
     {
-      "type": "fill_blank|match_pairs|reorder|pick_translation|write",
-      ... (same structure as exercise generation)
+      "kind": "fill_blank|match_pairs|multiple_choice|ordering|type_answer",
+      "prompt": "instruction",
+      "payload": { ... per-kind shape ... }
     }
   ]
 }`;

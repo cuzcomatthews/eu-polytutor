@@ -1,12 +1,12 @@
 import { prisma } from "./prisma";
 
-export async function getProgress() {
+export async function getProgress(userId: string) {
   const progress = await prisma.userProgress.findUnique({
-    where: { id: "singleton" },
+    where: { userId },
   });
 
-  const dictCount = await prisma.dictionaryEntry.count();
-  const convCount = await prisma.conversation.count();
+  const dictCount = await prisma.dictionaryEntry.count({ where: { userId } });
+  const convCount = await prisma.conversation.count({ where: { userId } });
   const activeSyllabus = await prisma.syllabus.findFirst({
     where: { isActive: true },
     orderBy: { createdAt: "desc" },
@@ -25,14 +25,14 @@ export async function getProgress() {
   };
 }
 
-export async function updateStreak() {
+export async function updateStreak(userId: string) {
   const progress = await prisma.userProgress.findUnique({
-    where: { id: "singleton" },
+    where: { userId },
   });
 
   if (!progress) {
     await prisma.userProgress.create({
-      data: { id: "singleton", streakDays: 1, lastActiveAt: new Date() },
+      data: { userId, streakDays: 1, lastActiveAt: new Date() },
     });
     return;
   }
@@ -47,12 +47,12 @@ export async function updateStreak() {
 
   if (diffDays === 1) {
     await prisma.userProgress.update({
-      where: { id: "singleton" },
+      where: { userId },
       data: { streakDays: { increment: 1 }, lastActiveAt: now },
     });
   } else {
     await prisma.userProgress.update({
-      where: { id: "singleton" },
+      where: { userId },
       data: { streakDays: 1, lastActiveAt: now },
     });
   }

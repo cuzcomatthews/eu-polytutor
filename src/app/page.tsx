@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth, getAuthHeaders } from "@/context/AuthContext";
 import Sidebar from "@/components/Sidebar";
 import DashboardView from "@/components/DashboardView";
 import ChatView from "@/components/ChatView";
@@ -9,6 +11,9 @@ import LessonsView from "@/components/LessonsView";
 import SettingsView from "@/components/SettingsView";
 
 export default function Home() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userLevel, setUserLevel] = useState("A1.1");
@@ -18,7 +23,7 @@ export default function Home() {
 
   const fetchProgress = useCallback(async () => {
     try {
-      const res = await fetch("/api/progress");
+      const res = await fetch("/api/progress", { headers: getAuthHeaders() });
       const data = await res.json();
       if (data.cefrLevel) setUserLevel(data.cefrLevel);
       if (data.streakDays !== undefined) setStreakDays(data.streakDays);
@@ -28,8 +33,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchProgress();
-  }, [fetchProgress]);
+    if (!loading && !user) {
+      router.replace("/login");
+      return;
+    }
+    if (user) fetchProgress();
+  }, [user, loading, router, fetchProgress]);
 
   const handleLevelChange = useCallback((newLevel: string) => {
     setUserLevel(newLevel);

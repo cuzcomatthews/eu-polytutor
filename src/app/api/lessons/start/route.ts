@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateExercises } from "@/lib/syllabus";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
     const body = await request.json();
     const { topicId, topicTitle, topicDescription, keyPoints } = body;
 
@@ -14,6 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const exercises = await generateExercises(
+      userId,
       topicId,
       topicTitle,
       topicDescription || "",

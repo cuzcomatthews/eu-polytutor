@@ -9,6 +9,18 @@ datasource db {
   extensions = [pgvector(map: "vector", schema: "public")]
 }
 
+// ──── Auth ────
+
+model User {
+  id                String             @id @default(cuid())
+  username          String             @unique
+  passwordHash      String
+  createdAt         DateTime           @default(now())
+  conversations     Conversation[]
+  dictionaryEntries DictionaryEntry[]
+  userProgress      UserProgress?
+}
+
 // ──── Core ────
 
 model Role {
@@ -27,6 +39,8 @@ model Conversation {
   title     String              @default("New Conversation")
   roleId    String
   role      Role                @relation(fields: [roleId], references: [id])
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
   turns     ConversationTurn[]
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
@@ -70,6 +84,8 @@ model RagDocument {
 
 model DictionaryEntry {
   id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
   word            String
   translation     String
   exampleSentence String?
@@ -92,7 +108,9 @@ model Syllabus {
 }
 
 model UserProgress {
-  id           String   @id @default("singleton")
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
   cefrLevel    String   @default("A1.1")
   totalTurns   Int      @default(0)
   totalWords   Int      @default(0)

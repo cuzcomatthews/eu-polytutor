@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
     const body = await request.json();
     const { title, roleId } = body;
 
@@ -14,6 +16,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: title || "New Conversation",
         roleId,
+        userId,
       },
       include: { role: { select: { id: true, name: true } } },
     });
@@ -24,9 +27,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
+
     const conversations = await prisma.conversation.findMany({
+      where: { userId },
       orderBy: { updatedAt: "desc" },
       include: {
         role: { select: { id: true, name: true } },

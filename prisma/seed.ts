@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -204,6 +205,23 @@ const starterSyllabus = {
 async function main() {
   console.log("Seeding database...");
 
+  // Demo user
+  const demoUsername = process.env.DEMO_USERNAME || "demo";
+  const demoPassword = process.env.DEMO_PASSWORD || "learnnow";
+  const existingUser = await prisma.user.findUnique({ where: { username: demoUsername } });
+  let demoUserId: string;
+  if (!existingUser) {
+    const hash = await bcrypt.hash(demoPassword, 10);
+    const user = await prisma.user.create({
+      data: { username: demoUsername, passwordHash: hash },
+    });
+    demoUserId = user.id;
+    console.log(`Created demo user: ${demoUsername}`);
+  } else {
+    demoUserId = existingUser.id;
+    console.log(`Demo user already exists: ${demoUsername}`);
+  }
+
   // Roles
   const existingRoles = await prisma.role.count();
   if (existingRoles === 0) {
@@ -213,10 +231,10 @@ async function main() {
 
   // User progress
   await prisma.userProgress.upsert({
-    where: { id: "singleton" },
+    where: { userId: demoUserId },
     update: {},
     create: {
-      id: "singleton",
+      userId: demoUserId,
       cefrLevel: "A1.1",
       totalTurns: 0,
       totalWords: 0,

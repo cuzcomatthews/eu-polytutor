@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getUserFromRequest } from "@/lib/auth";
 import { evaluateAnswer } from "@/lib/syllabus";
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
     const body = await request.json();
     const { userAnswer, expectedAnswer, exerciseType } = body;
+
+    if (exerciseType === "match_pairs") {
+      const result = await evaluateAnswer(userAnswer || "", "", exerciseType, userId);
+      return NextResponse.json(result);
+    }
 
     if (!userAnswer || !expectedAnswer) {
       return NextResponse.json(
@@ -16,7 +23,8 @@ export async function POST(request: NextRequest) {
     const result = await evaluateAnswer(
       userAnswer,
       expectedAnswer,
-      exerciseType || "write"
+      exerciseType || "type_answer",
+      userId
     );
 
     return NextResponse.json(result);

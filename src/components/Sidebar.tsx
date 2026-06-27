@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
+
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: "📊" },
   { id: "chat", label: "Conversations", icon: "💬" },
@@ -29,6 +31,7 @@ export default function Sidebar({
   totalWords,
   totalTurns,
 }: SidebarProps) {
+  const { user, logout } = useAuth();
   return (
     <>
       {/* Mobile header */}
@@ -100,6 +103,12 @@ export default function Sidebar({
             <span className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>Turns</span>
             <span className="text-xs text-white">{totalTurns}</span>
           </div>
+          {user && (
+            <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+              <span className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>{user.username}</span>
+              <button onClick={logout} className="text-xs opacity-50 hover:opacity-100 text-white">Logout</button>
+            </div>
+          )}
         </div>
       </aside>
     </>

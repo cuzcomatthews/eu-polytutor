@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateResponse } from "@/lib/deepseek";
 import env from "@/lib/env";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
     const body = await request.json();
     const { wordIds } = body;
 
@@ -13,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const entries = await prisma.dictionaryEntry.findMany({
-      where: { id: { in: wordIds } },
+      where: { id: { in: wordIds }, userId },
     });
 
     const targetName = env.targetLanguage;

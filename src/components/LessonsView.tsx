@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { ExerciseRenderer } from "@/components/exercises/ExerciseRenderer";
+import { getAuthHeaders } from "@/context/AuthContext";
 
 interface Topic {
   id: string;
@@ -21,7 +23,6 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
   const [syllabus, setSyllabus] = useState<any>(null);
   const [exercises, setExercises] = useState<any>(null);
   const [activeTopic, setActiveTopic] = useState<Topic | null>(null);
-  const [exerciseResults, setExerciseResults] = useState<Record<number, any>>({});
   const [milestone, setMilestone] = useState<any>(null);
   const [milestoneResults, setMilestoneResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,24 +30,20 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
 
   const fetchSyllabus = useCallback(async () => {
     try {
-      const res = await fetch("/api/syllabus");
+      const res = await fetch("/api/syllabus", { headers: getAuthHeaders() });
       const data = await res.json();
-      if (data.topics?.length) {
-        setSyllabus(data);
-      }
+      if (data.topics?.length) setSyllabus(data);
     } catch {}
   }, []);
 
-  useEffect(() => {
-    fetchSyllabus();
-  }, [fetchSyllabus]);
+  useEffect(() => { fetchSyllabus(); }, [fetchSyllabus]);
 
   const handleGenerateSyllabus = async () => {
     setGeneratingSyllabus(true);
     try {
       await fetch("/api/syllabus/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ level: userLevel }),
       });
       fetchSyllabus();
@@ -57,12 +54,11 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
   const startLesson = async (topic: Topic) => {
     setActiveTopic(topic);
     setExercises(null);
-    setExerciseResults({});
     setLoading(true);
     try {
       const res = await fetch("/api/lessons/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
           topicId: topic.id,
           topicTitle: topic.title,
@@ -76,43 +72,24 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
     setLoading(false);
   };
 
-  const checkExercise = async (index: number, userAnswer: string, expectedAnswer: string) => {
-    try {
-      const res = await fetch("/api/lessons/evaluate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userAnswer,
-          expectedAnswer,
-          exerciseType: exercises?.exercises?.[index]?.type || "write",
-        }),
-      });
-      const data = await res.json();
-      setExerciseResults((prev) => ({ ...prev, [index]: data }));
-    } catch {}
+  const closeLesson = () => {
+    setExercises(null);
+    setActiveTopic(null);
+    onProgressUpdate();
   };
-
-  const completedCount = Object.values(exerciseResults).filter((r: any) => r?.correct).length;
-  const totalCount = exercises?.exercises?.length || 0;
-  const topicPassed = totalCount > 0 && completedCount >= Math.ceil(totalCount * 0.6);
 
   const startMilestone = async () => {
     setMilestone(null);
     setMilestoneResults([]);
     setLoading(true);
     try {
-      const completedTopics =
-        syllabus?.topics
-          ?.filter((t: any) => t.status === "completed")
-          ?.map((t: any) => t.title) || [];
-
+      const completedTopics = syllabus?.topics
+        ?.filter((t: any) => t.status === "completed")
+        ?.map((t: any) => t.title) || [];
       const res = await fetch("/api/milestone/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          level: userLevel,
-          completedTopics,
-        }),
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ level: userLevel, completedTopics }),
       });
       const data = await res.json();
       setMilestone(data);
@@ -123,21 +100,19 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
   const submitMilestone = async () => {
     const answers = milestone?.exercises?.map((ex: any, i: number) => ({
       userAnswer: milestoneResults[i] || "",
-      expectedAnswer: ex.answer,
-      exerciseType: ex.type,
+      expectedAnswer: ex.payload?.answers?.[0] || ex.payload?.correct_index?.toString() || "",
+      exerciseType: ex.kind,
     }));
     if (!answers?.length) return;
-
     setLoading(true);
     try {
       const res = await fetch("/api/milestone/answer", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ answers }),
       });
       const data = await res.json();
       setMilestoneResults(data.results || []);
-
       if (data.levelAdvanced) {
         onLevelChange(data.level || "");
         fetchSyllabus();
@@ -188,30 +163,23 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
                     }`}
                     style={{
                       borderColor: status === "completed" ? "var(--color-success)" :
-                                   status === "in_progress" ? "var(--color-accent)" :
-                                   "var(--color-border)",
+                                   status === "in_progress" ? "var(--color-accent)" : "var(--color-border)",
                       background: activeTopic?.id === topic.id ? "rgba(99,102,241,0.05)" : "var(--color-card)",
                       opacity: status === "locked" ? 0.5 : 1,
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
-                        ${status === "completed" ? "text-white" :
-                          status === "in_progress" ? "text-white" :
-                          "text-gray-500"}`}
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
                         style={{
                           background: status === "completed" ? "var(--color-success)" :
-                                      status === "in_progress" ? "var(--color-accent)" :
-                                      "var(--color-input)",
-                        }}
-                      >
+                                      status === "in_progress" ? "var(--color-accent)" : "var(--color-input)",
+                          color: status === "completed" ? "white" : status === "in_progress" ? "white" : "inherit",
+                        }}>
                         {status === "completed" ? "✓" : status === "locked" ? "🔒" : i + 1}
                       </span>
                       <div>
                         <p className="text-sm font-medium">{topic.title}</p>
-                        <p className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>
-                          {topic.description}
-                        </p>
+                        <p className="text-xs" style={{ color: "var(--color-sidebar-text)" }}>{topic.description}</p>
                       </div>
                     </div>
                   </button>
@@ -221,13 +189,13 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
         ) : (
           <div className="text-center py-8">
             <p className="text-sm" style={{ color: "var(--color-sidebar-text)" }}>
-              No syllabus generated yet for {userLevel}. Click "Generate Syllabus" to create one from your RAG content.
+              No syllabus generated yet for {userLevel}. Click "Generate Syllabus".
             </p>
           </div>
         )}
       </div>
 
-      {/* Exercises */}
+      {/* Loading indicator */}
       {loading && (
         <div className="card text-center py-8 animate-fade-in">
           <div className="flex gap-1.5 justify-center">
@@ -235,396 +203,256 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
             <span className="w-2.5 h-2.5 rounded-full animate-bounce" style={{ background: "var(--color-accent)", animationDelay: "0.15s" }} />
             <span className="w-2.5 h-2.5 rounded-full animate-bounce" style={{ background: "var(--color-accent)", animationDelay: "0.3s" }} />
           </div>
-          <p className="text-sm mt-3" style={{ color: "var(--color-sidebar-text)" }}>Generating exercises...</p>
+          <p className="text-sm mt-3" style={{ color: "var(--color-sidebar-text)" }}>Generating...</p>
         </div>
       )}
 
-      {exercises?.exercises && !loading && (
-        <div className="card animate-slide-up">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">
-              {activeTopic?.title}
-            </h3>
-            <button onClick={() => { setExercises(null); setActiveTopic(null); setExerciseResults({}); }} className="btn-ghost text-sm">
-              Close
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {exercises.exercises.map((ex: any, i: number) => (
-              <ExerciseCard
-                key={i}
-                exercise={ex}
-                index={i}
-                result={exerciseResults[i]}
-                onCheck={(answer) => checkExercise(i, answer, ex.answer)}
-              />
-            ))}
-          </div>
-
-          {totalCount > 0 && (
-            <div className="mt-4 p-3 rounded-lg text-center" style={{
-              background: topicPassed ? "rgba(34,197,94,0.1)" : "var(--color-input)",
-              border: `1px solid ${topicPassed ? "var(--color-success)" : "var(--color-border)"}`,
-            }}>
-              <p className="text-sm font-semibold">
-                {topicPassed ? "Topic Passed!" : `${completedCount}/${totalCount} correct`}
-              </p>
-              <p className="text-xs mt-1" style={{ color: "var(--color-sidebar-text)" }}>
-                {topicPassed ? "Great job! This topic is now complete." : "Need 60% to pass. Keep trying!"}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Milestone */}
-      {milestone?.exercises && (
-        <div className="card animate-slide-up">
-          <h3 className="font-semibold mb-4">Milestone Evaluation - {userLevel}</h3>
-          <div className="space-y-4">
-            {milestone.exercises.map((ex: any, i: number) => (
-              <ExerciseCard
-                key={i}
-                exercise={ex}
-                index={i}
-                result={milestoneResults[i]}
-                onCheck={(answer) => {
-                  setMilestoneResults((prev) => {
-                    const next = [...prev];
-                    next[i] = answer;
-                    return next;
-                  });
-                }}
-                inline
-              />
-            ))}
-          </div>
-
-          {milestoneResults.length === 0 ? (
-            <input
-              type="text"
-              disabled
-              placeholder="Fill all answers, then click Submit"
-              className="input-field mt-4 opacity-50"
-            />
-          ) : null}
-
-          {typeof milestoneResults[0] === "string" ? (
-            <button
-              onClick={submitMilestone}
-              disabled={loading}
-              className="btn-primary mt-4 w-full"
-            >
-              {loading ? "Evaluating..." : "Submit Milestone"}
-            </button>
-          ) : (
-            milestoneResults.length > 0 && (
-              <div className="mt-4 p-4 rounded-lg text-center" style={{
-                background: milestoneResults.every((r: any) => r?.correct) ? "rgba(34,197,94,0.1)" : "var(--color-input)",
-                border: `1px solid ${milestoneResults.every((r: any) => r?.correct) ? "var(--color-success)" : "var(--color-border)"}`,
-              }}>
-                <p className="font-bold">
-                  {milestoneResults.filter((r: any) => r?.correct).length}/{milestoneResults.length} correct
-                </p>
-              </div>
-            )
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ExerciseCard({
-  exercise,
-  index,
-  result,
-  onCheck,
-  inline,
-}: {
-  exercise: any;
-  index: number;
-  result: any;
-  onCheck: (answer: string) => void;
-  inline?: boolean;
-}) {
-  const [answer, setAnswer] = useState("");
-
-  const handleCheck = () => {
-    if (answer.trim()) onCheck(answer.trim());
-  };
-
-  return (
-    <div className="p-3 rounded-lg" style={{ border: "1px solid var(--color-border)" }}>
-      <span className="text-xs opacity-50">#{index + 1} • {exercise.type}</span>
-
-      {exercise.type === "fill_blank" && (
-        <>
-          <p className="text-sm my-2">{exercise.prompt || exercise.sentence}</p>
-          {exercise.options && !result && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {exercise.options.map((opt: string, j: number) => (
-                <button
-                  key={j}
-                  onClick={() => inline ? onCheck(opt) : (setAnswer(opt), undefined)}
-                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                    answer === opt ? "ring-2" : ""
-                  }`}
-                  style={{
-                    borderColor: answer === opt ? "var(--color-accent)" : "var(--color-border)",
-                    background: answer === opt ? "rgba(99,102,241,0.1)" : "var(--color-input)",
-                  }}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {exercise.type === "pick_translation" && (
-        <>
-          <p className="text-sm my-2">{exercise.prompt || `Translate: ${exercise.sentence}`}</p>
-          {exercise.options && !result && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {exercise.options.map((opt: string, j: number) => (
-                <button
-                  key={j}
-                  onClick={() => inline ? onCheck(opt) : (setAnswer(opt), undefined)}
-                  className={`px-3 py-1.5 rounded-lg text-sm border ${answer === opt ? "ring-2" : ""}`}
-                  style={{
-                    borderColor: answer === opt ? "var(--color-accent)" : "var(--color-border)",
-                    background: answer === opt ? "rgba(99,102,241,0.1)" : "var(--color-input)",
-                  }}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {exercise.type === "reorder" && (
-        <>
-          <p className="text-sm my-2">{exercise.prompt || "Put words in order:"}</p>
-          {!result && (
-            <>
-              <input
-                type="text"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type the correct sentence..."
-                className="input-field"
-                onKeyDown={(e) => e.key === "Enter" && handleCheck()}
-              />
-              <p className="text-xs mt-1" style={{ color: "var(--color-sidebar-text)" }}>
-                Words: {exercise.words?.join(", ")}
-              </p>
-            </>
-          )}
-        </>
-      )}
-
-      {exercise.type === "match_pairs" && (
-        <MatchPairs
-          exercise={exercise}
-          result={result}
-          onComplete={(matched) => {
-            const formatted = exercise.pairs
-              .map((p: any, i: number) => `${p.left}=${p.right}`)
-              .join(", ");
-            onCheck(formatted);
-          }}
-          inline={inline}
+      {/* Lesson Overlay */}
+      {exercises?.exercises && activeTopic && !loading && (
+        <LessonOverlay
+          topic={activeTopic}
+          exercises={exercises}
+          teachingNotes={exercises.teaching_notes}
+          onClose={closeLesson}
+          onProgress={onProgressUpdate}
         />
       )}
 
-      {!["fill_blank", "pick_translation", "reorder", "match_pairs"].includes(exercise.type) && (
-        <>
-          <p className="text-sm my-2">{exercise.prompt || exercise.sentence || "Write your answer:"}</p>
-          {!result && (
-            <input
-              type="text"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="Type your answer..."
-              className="input-field"
-              onKeyDown={(e) => e.key === "Enter" && handleCheck()}
-            />
-          )}
-        </>
-      )}
-
-      {!result && !inline && (
-        <button onClick={handleCheck} disabled={!answer.trim()} className="btn-primary text-xs mt-2">
-          Check
-        </button>
-      )}
-
-      {result && (
-        <div className="mt-2 p-2 rounded" style={{
-          background: result.correct ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-        }}>
-          <p className="text-xs font-medium" style={{
-            color: result.correct ? "var(--color-success)" : "var(--color-error)",
-          }}>
-            {result.correct ? "✓ Correct" : "✗ Incorrect"} — {result.feedback}
-          </p>
-          {!result.correct && (
-            <p className="text-xs mt-1 opacity-70">Expected: {exercise.answer}</p>
-          )}
-        </div>
+      {/* Milestone */}
+      {milestone?.exercises && !loading && (
+        <LessonOverlay
+          topic={{ id: "milestone", title: `Milestone: ${userLevel}`, description: "Level evaluation", order: 0, keyPoints: [] }}
+          exercises={milestone}
+          isMilestone
+          milestoneResults={milestoneResults}
+          setMilestoneResults={setMilestoneResults}
+          onSubmitMilestone={submitMilestone}
+          onClose={() => setMilestone(null)}
+          onProgress={onProgressUpdate}
+        />
       )}
     </div>
   );
 }
 
-function MatchPairs({
-  exercise,
-  result,
-  onComplete,
-  inline,
+type Phase = "intro" | "playing" | "complete";
+
+function LessonOverlay({
+  topic,
+  exercises,
+  teachingNotes,
+  isMilestone,
+  milestoneResults,
+  setMilestoneResults,
+  onSubmitMilestone,
+  onClose,
+  onProgress,
 }: {
-  exercise: any;
-  result: any;
-  onComplete: (matched: boolean) => void;
-  inline?: boolean;
+  topic: Topic;
+  exercises: any;
+  teachingNotes?: string;
+  isMilestone?: boolean;
+  milestoneResults?: any[];
+  setMilestoneResults?: (results: any[]) => void;
+  onSubmitMilestone?: () => void;
+  onClose: () => void;
+  onProgress: () => void;
 }) {
-  const [shuffledRight] = useState(() => {
-    const arr = exercise.pairs.map((_: any, i: number) => i);
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  });
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [idx, setIdx] = useState(0);
+  const [answer, setAnswer] = useState<Record<string, unknown> | null>(null);
+  const [lastResult, setLastResult] = useState<any>(null);
+  const [results, setResults] = useState<Record<number, any>>({});
+  const [checking, setChecking] = useState(false);
 
-  const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
-  const [matched, setMatched] = useState<Record<number, boolean>>({});
-  const [flashRight, setFlashRight] = useState<number | null>(null);
-  const [wrongLeft, setWrongLeft] = useState<number | null>(null);
+  const exerciseList = exercises.exercises || [];
+  const totalCount = exerciseList.length;
+  const ex = exerciseList[idx];
+  const isLast = idx === totalCount - 1;
 
-  const allMatched = Object.keys(matched).length === exercise.pairs.length;
+  const completedCount = Object.values(results).filter((r: any) => r?.correct).length;
+  const accuracy = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const handleLeftClick = (i: number) => {
-    if (matched[i] || allMatched || result) return;
-    setSelectedLeft(i);
-    setFlashRight(null);
-  };
+  const handleCheck = async () => {
+    if (!answer) return;
+    setChecking(true);
+    try {
+      let userAnswer = "";
+      let expectedAnswer = "";
 
-  const handleRightClick = (shuffledIdx: number) => {
-    if (selectedLeft === null || allMatched || result) return;
-    const originalPairIndex = shuffledRight[shuffledIdx];
-
-    if (matched[originalPairIndex]) return;
-
-    if (selectedLeft === originalPairIndex) {
-      setMatched((prev) => ({ ...prev, [selectedLeft]: true }));
-      setSelectedLeft(null);
-      if (Object.keys(matched).length + 1 === exercise.pairs.length) {
-        setTimeout(() => onComplete(true), 300);
+      if (ex.kind === "multiple_choice") {
+        userAnswer = String(answer.selected_index);
+        expectedAnswer = String(ex.payload.correct_index);
+      } else if (ex.kind === "fill_blank" || ex.kind === "type_answer") {
+        userAnswer = answer.text as string;
+        expectedAnswer = (ex.payload.answers as string[])?.[0] || "";
+      } else if (ex.kind === "match_pairs") {
+        userAnswer = "all_matched";
+        expectedAnswer = "";
+      } else if (ex.kind === "ordering") {
+        userAnswer = (answer.order as number[]).join(",");
+        expectedAnswer = (ex.payload.correct_order as number[]).join(",");
       }
+
+      const res = await fetch("/api/lessons/evaluate", {
+        method: "POST",
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ userAnswer, expectedAnswer, exerciseType: ex.kind }),
+      });
+      const data = await res.json();
+      setLastResult(data);
+      setResults((prev) => ({ ...prev, [idx]: data }));
+    } catch {}
+    setChecking(false);
+  };
+
+  const handleNext = () => {
+    setLastResult(null);
+    setAnswer(null);
+    if (isLast) {
+      setPhase("complete");
+      onProgress();
     } else {
-      setFlashRight(shuffledIdx);
-      setWrongLeft(selectedLeft);
-      setSelectedLeft(null);
-      setTimeout(() => {
-        setFlashRight(null);
-        setWrongLeft(null);
-      }, 600);
+      setIdx((i) => i + 1);
     }
   };
 
-  return (
-    <>
-      <p className="text-sm my-2">{exercise.prompt || "Match the pairs:"}</p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-        <div className="space-y-2">
-          {exercise.pairs.map((pair: any, i: number) => (
-            <button
-              key={`left-${i}`}
-              onClick={() => (inline ? undefined : handleLeftClick(i))}
-              className={`text-sm p-2.5 rounded-lg text-center border transition-all duration-200 ${
-                matched[i] ? "cursor-default" : "cursor-pointer hover:shadow-sm"
-              }`}
-              style={{
-                background: matched[i]
-                  ? "rgba(34,197,94,0.15)"
-                  : selectedLeft === i
-                  ? "rgba(99,102,241,0.15)"
-                  : wrongLeft === i
-                  ? "rgba(239,68,68,0.15)"
-                  : "var(--color-input)",
-                borderColor: matched[i]
-                  ? "var(--color-success)"
-                  : selectedLeft === i
-                  ? "var(--color-accent)"
-                  : wrongLeft === i
-                  ? "var(--color-error)"
-                  : "var(--color-border)",
-                opacity: matched[i] ? 0.7 : 1,
-              }}
-            >
-              <span className="font-medium" style={{
-                color: matched[i] ? "var(--color-success)" : "inherit",
-              }}>
-                {matched[i] ? "✓ " : ""}
-              </span>
-              {pair.left}
+  // Intro phase
+  if (phase === "intro") {
+    return (
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+        <div className="card max-w-xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-fade-in" onClick={(e) => e.stopPropagation()}>
+          <div className="text-center">
+            <h2 className="text-xl font-bold">{topic.title}</h2>
+            <p className="text-sm mt-1" style={{ color: "var(--color-sidebar-text)" }}>{topic.description}</p>
+          </div>
+
+          {teachingNotes && (
+            <div className="mt-4 p-4 rounded-xl text-sm" style={{ background: "rgba(99,102,241,0.08)" }}>
+              <p className="font-bold text-xs uppercase mb-1" style={{ color: "var(--color-accent)" }}>Mini-lesson</p>
+              <p>{teachingNotes}</p>
+            </div>
+          )}
+
+          <div className="mt-4 text-xs text-center" style={{ color: "var(--color-sidebar-text)" }}>
+            {totalCount} exercises
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <button onClick={onClose} className="btn-ghost flex-1 text-sm">Back</button>
+            <button onClick={() => setPhase("playing")} className="btn-primary flex-1 text-sm">
+              {isMilestone ? "Start Evaluation" : "Start"}
             </button>
-          ))}
-        </div>
-        <div className="space-y-2">
-          {shuffledRight.map((origIdx: number, shuffledIdx: number) => (
-            <button
-              key={`right-${shuffledIdx}`}
-              onClick={() => (inline ? undefined : handleRightClick(shuffledIdx))}
-              className={`text-sm p-2.5 rounded-lg text-center border transition-all duration-200 ${
-                matched[origIdx]
-                  ? "cursor-default opacity-70"
-                  : "cursor-pointer hover:shadow-sm"
-              }`}
-              style={{
-                background: matched[origIdx]
-                  ? "rgba(34,197,94,0.15)"
-                  : flashRight === shuffledIdx
-                  ? "rgba(239,68,68,0.2)"
-                  : !matched[origIdx] && selectedLeft !== null
-                  ? "rgba(99,102,241,0.05)"
-                  : "var(--color-input)",
-                borderColor: matched[origIdx]
-                  ? "var(--color-success)"
-                  : flashRight === shuffledIdx
-                  ? "var(--color-error)"
-                  : "var(--color-border)",
-              }}
-            >
-              {exercise.pairs[origIdx].right}
-            </button>
-          ))}
+          </div>
         </div>
       </div>
-      {allMatched && !result && (
-        <p className="text-xs mt-2 text-center" style={{ color: "var(--color-success)" }}>
-          All pairs matched!
-        </p>
-      )}
-      {result && (
-        <div className="mt-2 p-2 rounded" style={{
-          background: result.correct ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-        }}>
-          <p className="text-xs font-medium" style={{
-            color: result.correct ? "var(--color-success)" : "var(--color-error)",
-          }}>
-            {result.correct ? "✓ Correct" : "✗ Incorrect"} — {result.feedback}
-          </p>
+    );
+  }
+
+  // Complete phase
+  if (phase === "complete") {
+    return (
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+        <div className="card max-w-xl w-full mx-4 text-center animate-fade-in" onClick={(e) => e.stopPropagation()}>
+          <div className="text-6xl">{accuracy >= 60 ? "🎉" : "💪"}</div>
+          <h2 className="mt-2 text-xl font-bold" style={{ color: accuracy >= 60 ? "var(--color-success)" : "inherit" }}>
+            {isMilestone ? "Evaluation Complete" : "Lesson Complete!"}
+          </h2>
+
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="rounded-xl border-2 p-3" style={{ borderColor: "var(--color-border)" }}>
+              <p className="text-xs opacity-60">Accuracy</p>
+              <p className="text-xl font-bold">{accuracy}%</p>
+            </div>
+            <div className="rounded-xl border-2 p-3" style={{ borderColor: "var(--color-border)" }}>
+              <p className="text-xs opacity-60">Correct</p>
+              <p className="text-xl font-bold">{completedCount}/{totalCount}</p>
+            </div>
+            <div className="rounded-xl border-2 p-3" style={{ borderColor: "var(--color-border)" }}>
+              <p className="text-xs opacity-60">Result</p>
+              <p className="text-xl font-bold" style={{ color: accuracy >= 60 ? "var(--color-success)" : "var(--color-error)" }}>
+                {accuracy >= 60 ? "Pass ✓" : "Retry ✗"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <button onClick={onClose} className="btn-ghost flex-1 text-sm">Back to Syllabus</button>
+            {isMilestone && accuracy >= 60 && onSubmitMilestone && (
+              <button onClick={onSubmitMilestone} className="btn-primary flex-1 text-sm">Advance Level</button>
+            )}
+          </div>
         </div>
-      )}
-    </>
+      </div>
+    );
+  }
+
+  // Playing phase
+  return (
+    <div className="fixed inset-0 z-40 flex flex-col" style={{ background: "var(--color-bg)" }}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b" style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}>
+        <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">← Quit</button>
+        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--color-input)" }}>
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: `${((idx + (lastResult ? 1 : 0)) / totalCount) * 100}%`,
+              background: "var(--color-accent)",
+            }}
+          />
+        </div>
+        <span className="text-xs opacity-60">{idx + 1}/{totalCount}</span>
+      </div>
+
+      {/* Exercise */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
+          <div className="card min-h-[200px]">
+            <p className="text-xs font-bold uppercase mb-1 opacity-50">Question {idx + 1} of {totalCount}</p>
+            <h2 className="text-xl font-bold mb-4">{ex.prompt}</h2>
+            <ExerciseRenderer
+              key={ex.kind + "-" + idx}
+              exercise={ex}
+              onAnswerChange={setAnswer}
+              disabled={!!lastResult}
+            />
+          </div>
+
+          {lastResult && (
+            <div
+              className="flex items-start gap-3 rounded-2xl p-4 animate-fade-in"
+              style={{
+                background: lastResult.correct ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+              }}
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white text-sm"
+                style={{ background: lastResult.correct ? "var(--color-success)" : "var(--color-error)" }}>
+                {lastResult.correct ? "✓" : "✗"}
+              </div>
+              <div>
+                <p className="font-bold text-sm" style={{ color: lastResult.correct ? "var(--color-success)" : "var(--color-error)" }}>
+                  {lastResult.correct ? "Nice!" : "Not quite."}
+                </p>
+                {lastResult.feedback && <p className="text-sm mt-0.5 opacity-80">{lastResult.feedback}</p>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="px-4 py-3 border-t flex justify-end" style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}>
+        {!lastResult ? (
+          <button onClick={handleCheck} disabled={!answer || checking} className="btn-primary">
+            {checking ? "Checking..." : "Check"}
+          </button>
+        ) : (
+          <button onClick={handleNext} className="btn-primary">
+            {isLast ? "Finish" : "Next"}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
-
-

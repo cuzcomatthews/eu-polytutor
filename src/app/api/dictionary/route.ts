@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateResponse } from "@/lib/deepseek";
 import { buildDictionaryEntryPrompt } from "@/lib/prompts";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
     const url = new URL(request.url);
     const search = url.searchParams.get("search") || "";
     const difficulty = url.searchParams.get("difficulty");
@@ -12,7 +14,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get("page") || "1", 10);
     const limit = parseInt(url.searchParams.get("limit") || "20", 10);
 
-    let where: any = {};
+    let where: any = { userId };
 
     if (search) {
       where.OR = [
@@ -55,6 +57,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = getUserFromRequest(request);
     const body = await request.json();
     const { word: rawWord } = body;
 
@@ -92,6 +95,7 @@ export async function POST(request: NextRequest) {
 
     const entry = await prisma.dictionaryEntry.create({
       data: {
+        userId,
         word,
         translation,
         gender,
@@ -102,9 +106,9 @@ export async function POST(request: NextRequest) {
     });
 
     await prisma.userProgress.upsert({
-      where: { id: "singleton" },
+      where: { userId },
       update: { totalWords: { increment: 1 } },
-      create: { id: "singleton", totalWords: 1 },
+      create: { userId, totalWords: 1 },
     });
 
     return NextResponse.json({ entry });

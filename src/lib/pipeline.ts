@@ -8,6 +8,7 @@ import { prisma } from "./prisma";
 import env from "./env";
 
 export interface PipelineInput {
+  userId: string;
   conversationId: string;
   roleId: string;
   userLevel: string;
@@ -103,13 +104,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
   // 7. Update user progress
   await prisma.userProgress.upsert({
-    where: { id: "singleton" },
+    where: { userId: input.userId },
     update: {
       totalTurns: { increment: 1 },
       lastActiveAt: new Date(),
     },
     create: {
-      id: "singleton",
+      userId: input.userId,
       totalTurns: 1,
       lastActiveAt: new Date(),
     },

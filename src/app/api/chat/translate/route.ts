@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateResponse } from "@/lib/deepseek";
 import env from "@/lib/env";
+import { tryGetUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = tryGetUserFromRequest(request)?.userId;
     const body = await request.json();
     const { text } = body;
 
