@@ -429,23 +429,17 @@ function ExerciseCard({
       )}
 
       {exercise.type === "match_pairs" && (
-        <>
-          <p className="text-sm my-2">{exercise.prompt || "Match the pairs:"}</p>
-          {exercise.pairs && (
-            <div className="grid grid-cols-2 gap-2">
-              {exercise.pairs.map((pair: any, j: number) => (
-                <React.Fragment key={j}>
-                  <span className="text-sm p-2 rounded text-center" style={{ background: "var(--color-input)" }}>
-                    {pair.left}
-                  </span>
-                  <span className="text-sm p-2 rounded text-center" style={{ background: "var(--color-input)" }}>
-                    {pair.right}
-                  </span>
-                </React.Fragment>
-              ))}
-            </div>
-          )}
-        </>
+        <MatchPairs
+          exercise={exercise}
+          result={result}
+          onComplete={(matched) => {
+            const formatted = exercise.pairs
+              .map((p: any, i: number) => `${p.left}=${p.right}`)
+              .join(", ");
+            onCheck(formatted);
+          }}
+          inline={inline}
+        />
       )}
 
       {!["fill_blank", "pick_translation", "reorder", "match_pairs"].includes(exercise.type) && (
@@ -485,6 +479,151 @@ function ExerciseCard({
         </div>
       )}
     </div>
+  );
+}
+
+function MatchPairs({
+  exercise,
+  result,
+  onComplete,
+  inline,
+}: {
+  exercise: any;
+  result: any;
+  onComplete: (matched: boolean) => void;
+  inline?: boolean;
+}) {
+  const [shuffledRight] = useState(() => {
+    const arr = exercise.pairs.map((_: any, i: number) => i);
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  });
+
+  const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
+  const [matched, setMatched] = useState<Record<number, boolean>>({});
+  const [flashRight, setFlashRight] = useState<number | null>(null);
+  const [wrongLeft, setWrongLeft] = useState<number | null>(null);
+
+  const allMatched = Object.keys(matched).length === exercise.pairs.length;
+
+  const handleLeftClick = (i: number) => {
+    if (matched[i] || allMatched || result) return;
+    setSelectedLeft(i);
+    setFlashRight(null);
+  };
+
+  const handleRightClick = (shuffledIdx: number) => {
+    if (selectedLeft === null || allMatched || result) return;
+    const originalPairIndex = shuffledRight[shuffledIdx];
+
+    if (matched[originalPairIndex]) return;
+
+    if (selectedLeft === originalPairIndex) {
+      setMatched((prev) => ({ ...prev, [selectedLeft]: true }));
+      setSelectedLeft(null);
+      if (Object.keys(matched).length + 1 === exercise.pairs.length) {
+        setTimeout(() => onComplete(true), 300);
+      }
+    } else {
+      setFlashRight(shuffledIdx);
+      setWrongLeft(selectedLeft);
+      setSelectedLeft(null);
+      setTimeout(() => {
+        setFlashRight(null);
+        setWrongLeft(null);
+      }, 600);
+    }
+  };
+
+  return (
+    <>
+      <p className="text-sm my-2">{exercise.prompt || "Match the pairs:"}</p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        <div className="space-y-2">
+          {exercise.pairs.map((pair: any, i: number) => (
+            <button
+              key={`left-${i}`}
+              onClick={() => (inline ? undefined : handleLeftClick(i))}
+              className={`text-sm p-2.5 rounded-lg text-center border transition-all duration-200 ${
+                matched[i] ? "cursor-default" : "cursor-pointer hover:shadow-sm"
+              }`}
+              style={{
+                background: matched[i]
+                  ? "rgba(34,197,94,0.15)"
+                  : selectedLeft === i
+                  ? "rgba(99,102,241,0.15)"
+                  : wrongLeft === i
+                  ? "rgba(239,68,68,0.15)"
+                  : "var(--color-input)",
+                borderColor: matched[i]
+                  ? "var(--color-success)"
+                  : selectedLeft === i
+                  ? "var(--color-accent)"
+                  : wrongLeft === i
+                  ? "var(--color-error)"
+                  : "var(--color-border)",
+                opacity: matched[i] ? 0.7 : 1,
+              }}
+            >
+              <span className="font-medium" style={{
+                color: matched[i] ? "var(--color-success)" : "inherit",
+              }}>
+                {matched[i] ? "✓ " : ""}
+              </span>
+              {pair.left}
+            </button>
+          ))}
+        </div>
+        <div className="space-y-2">
+          {shuffledRight.map((origIdx: number, shuffledIdx: number) => (
+            <button
+              key={`right-${shuffledIdx}`}
+              onClick={() => (inline ? undefined : handleRightClick(shuffledIdx))}
+              className={`text-sm p-2.5 rounded-lg text-center border transition-all duration-200 ${
+                matched[origIdx]
+                  ? "cursor-default opacity-70"
+                  : "cursor-pointer hover:shadow-sm"
+              }`}
+              style={{
+                background: matched[origIdx]
+                  ? "rgba(34,197,94,0.15)"
+                  : flashRight === shuffledIdx
+                  ? "rgba(239,68,68,0.2)"
+                  : !matched[origIdx] && selectedLeft !== null
+                  ? "rgba(99,102,241,0.05)"
+                  : "var(--color-input)",
+                borderColor: matched[origIdx]
+                  ? "var(--color-success)"
+                  : flashRight === shuffledIdx
+                  ? "var(--color-error)"
+                  : "var(--color-border)",
+              }}
+            >
+              {exercise.pairs[origIdx].right}
+            </button>
+          ))}
+        </div>
+      </div>
+      {allMatched && !result && (
+        <p className="text-xs mt-2 text-center" style={{ color: "var(--color-success)" }}>
+          All pairs matched!
+        </p>
+      )}
+      {result && (
+        <div className="mt-2 p-2 rounded" style={{
+          background: result.correct ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+        }}>
+          <p className="text-xs font-medium" style={{
+            color: result.correct ? "var(--color-success)" : "var(--color-error)",
+          }}>
+            {result.correct ? "✓ Correct" : "✗ Incorrect"} — {result.feedback}
+          </p>
+        </div>
+      )}
+    </>
   );
 }
 

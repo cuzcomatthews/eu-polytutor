@@ -12,6 +12,8 @@ const LANGUAGE_NAMES: Record<string, string> = {
   zh: "Chinese",
   en: "English",
   es: "Spanish",
+  ru: "Russian",
+  ar: "Arabic",
 };
 
 const NATIVE_NAMES: Record<string, string> = {
@@ -21,6 +23,11 @@ const NATIVE_NAMES: Record<string, string> = {
   de: "German",
   it: "Italian",
   pt: "Portuguese",
+  ja: "Japanese",
+  ko: "Korean",
+  zh: "Chinese",
+  ru: "Russian",
+  ar: "Arabic",
 };
 
 export async function buildChatMessages(
@@ -94,9 +101,36 @@ function buildSystemPrompt(
     }
   }
 
+  const levelNum = parseFloat(userLevel.replace(/[A-C]/gi, ""));
+  const isBeginner = !isNaN(levelNum) && levelNum <= 2.2;
+  const isIntermediate = !isNaN(levelNum) && levelNum > 2.2 && levelNum <= 4.2;
+  const isAdvanced = !isNaN(levelNum) && levelNum > 4.2;
+
   prompt += `## Instructions\n`;
-  prompt += `- Adapt your language to the user's CEFR level (${userLevel})\n`;
-  prompt += `- Use ${nativeName} for explaining complex grammar at beginner levels, gradually shift to ${targetName}\n`;
+  prompt += `- Adapt all responses to the user's CEFR level (${userLevel})\n`;
+
+  if (isCourseRole) {
+    if (isBeginner) {
+      prompt += `- EXPLAIN EVERYTHING in ${nativeName}. Only use ${targetName} for example words and phrases.\n`;
+      prompt += `- The user is a complete beginner. All grammar explanations, instructions, and feedback MUST be in ${nativeName}.\n`;
+    } else if (isIntermediate) {
+      prompt += `- Explain grammar and concepts in ${nativeName}, but use ${targetName} for examples and simple instructions.\n`;
+      prompt += `- Gradually increase the amount of ${targetName} in your teaching. Mix both languages naturally.\n`;
+    } else if (isAdvanced) {
+      prompt += `- Teach primarily in ${targetName}. Only switch to ${nativeName} to clarify complex concepts or when the user asks.\n`;
+    } else {
+      prompt += `- Use ${nativeName} for explaining complex grammar at beginner levels, gradually shift to ${targetName}\n`;
+    }
+  } else {
+    if (isBeginner) {
+      prompt += `- Chat in ${targetName} for simple phrases, but use ${nativeName} if the user seems confused or asks for help.\n`;
+    } else if (isIntermediate) {
+      prompt += `- Chat mostly in ${targetName}, but feel free to mix in ${nativeName} for clarity.\n`;
+    } else if (isAdvanced) {
+      prompt += `- Chat entirely in ${targetName} unless the user explicitly asks for ${nativeName}.\n`;
+    }
+  }
+
   prompt += `- If the user asks something beyond their level, still answer but keep it accessible\n`;
   prompt += `- Use the source material above as your primary teaching content\n`;
   prompt += `- Never use asterisks, stage directions, or parenthetical actions\n`;

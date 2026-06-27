@@ -11,21 +11,12 @@ export async function transcribeAudio(audioBytes: Buffer): Promise<STTResult> {
     throw new Error("Deepgram API key not configured");
   }
 
-  const language =
-    env.targetLanguage === "de" ? "de" :
-    env.targetLanguage === "fr" ? "fr" :
-    env.targetLanguage === "it" ? "it" :
-    env.targetLanguage === "pt" ? "pt" :
-    env.targetLanguage === "ja" ? "ja" :
-    env.targetLanguage === "ko" ? "ko" :
-    "en";
-
   const t0 = performance.now();
 
   const blob = new Blob([new Uint8Array(audioBytes)], { type: "audio/wav" });
 
   const response = await fetch(
-    `https://api.deepgram.com/v1/listen?model=nova-3&language=${language}&smart_format=true`,
+    `https://api.deepgram.com/v1/listen?model=nova-3&detect_language=true&smart_format=true`,
     {
       method: "POST",
       headers: {

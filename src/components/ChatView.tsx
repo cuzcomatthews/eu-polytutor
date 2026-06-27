@@ -40,6 +40,11 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
+  const [translations, setTranslations] = useState<Record<number, string>>({});
+  const [translatingIdx, setTranslatingIdx] = useState<number | null>(null);
+  const [selectedText, setSelectedText] = useState("");
+  const [selectionBubbleIdx, setSelectionBubbleIdx] = useState<number | null>(null);
+  const [selectionPos, setSelectionPos] = useState<{ x: number; y: number } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -223,6 +228,53 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
     setIsPlaying(false);
   };
 
+  const handleTranslate = async (idx: number, text: string) => {
+    if (translations[idx] || translatingIdx !== null) return;
+    setTranslatingIdx(idx);
+    try {
+      const res = await fetch("/api/chat/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (data.translation) {
+        setTranslations((prev) => ({ ...prev, [idx]: data.translation }));
+      }
+    } catch {}
+    setTranslatingIdx(null);
+  };
+
+  const handleAddToDictionary = async () => {
+    if (!selectedText.trim()) return;
+    try {
+      await fetch("/api/dictionary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word: selectedText.trim() }),
+      });
+      setSelectedText("");
+      setSelectionBubbleIdx(null);
+      setSelectionPos(null);
+    } catch {}
+  };
+
+  const handleMessageMouseUp = (i: number, e: React.MouseEvent) => {
+    setTimeout(() => {
+      const sel = window.getSelection();
+      const text = sel?.toString().trim();
+      if (text && text.length > 1) {
+        setSelectedText(text);
+        setSelectionBubbleIdx(i);
+        setSelectionPos({ x: e.clientX, y: e.clientY });
+      } else {
+        setSelectedText("");
+        setSelectionBubbleIdx(null);
+        setSelectionPos(null);
+      }
+    }, 10);
+  };
+
   return (
     <div className="flex flex-col h-screen pt-14 lg:pt-0">
       {/* Header */}
@@ -332,15 +384,36 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                         background: msg.role === "user" ? "var(--color-accent)" : "var(--color-card)",
                         border: msg.role === "assistant" ? "1px solid var(--color-border)" : "none",
                       }}
+                      onMouseUp={(e) => handleMessageMouseUp(i, e)}
                     >
                       <p className="whitespace-pre-wrap">{msg.content}</p>
-                      {msg.role === "assistant" && msg.audioBase64 && (
-                        <button
-                          onClick={() => (isPlaying ? stopAudio() : playAudio(msg.audioBase64!))}
-                          className="mt-2 text-xs flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity"
-                        >
-                          {isPlaying ? "⏹ Stop" : "🔊 Play"}
-                        </button>
+                      {translations[i] && (
+                        <div className="mt-2 pt-2 text-xs opacity-85 italic" style={{
+                          borderTop: "1px solid var(--color-border)",
+                          color: "var(--color-sidebar-text)",
+                        }}>
+                          <span className="font-semibold not-italic" style={{ color: "var(--color-accent)" }}>Translation: </span>
+                          {translations[i]}
+                        </div>
+                      )}
+                      {msg.role === "assistant" && (
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          {msg.audioBase64 && (
+                            <button
+                              onClick={() => (isPlaying ? stopAudio() : playAudio(msg.audioBase64!))}
+                              className="text-xs flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity"
+                            >
+                              {isPlaying ? "⏹ Stop" : "🔊 Play"}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleTranslate(i, msg.content)}
+                            disabled={translatingIdx === i || !!translations[i]}
+                            className="text-xs flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
+                          >
+                            {translatingIdx === i ? "🌐 ..." : translations[i] ? "🌐 Translated" : "🌐 Translate"}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -354,6 +427,27 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                         <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--color-accent)", animationDelay: "0.3s" }} />
                       </div>
                     </div>
+                  </div>
+                )}
+                {selectedText && selectionPos && (
+                  <div
+                    className="fixed z-50 animate-fade-in"
+                    style={{
+                      left: selectionPos.x + 10,
+                      top: selectionPos.y - 40,
+                    }}
+                  >
+                    <button
+                      onClick={handleAddToDictionary}
+                      className="px-3 py-1.5 text-xs rounded-lg shadow-lg border flex items-center gap-1.5 font-medium"
+                      style={{
+                        background: "var(--color-card)",
+                        borderColor: "var(--color-border)",
+                        color: "var(--color-accent)",
+                      }}
+                    >
+                      📖 Add &quot;{selectedText.length > 25 ? selectedText.slice(0, 25) + "..." : selectedText}&quot; to Dictionary
+                    </button>
                   </div>
                 )}
                 <div ref={chatEndRef} />
