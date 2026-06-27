@@ -1,4 +1,4 @@
-import { pool } from "./prisma";
+import { prisma } from "./prisma";
 import { embedText, embedTexts, getEmbeddingDim } from "./embeddings";
 import env from "./env";
 import { v4 as uuid } from "uuid";
@@ -28,46 +28,44 @@ export async function queryRag(
   const vectorStr = `[${queryEmbedding.join(",")}]`;
 
   let sql: string;
-  let params: any[];
 
   if (level) {
     sql = `
-      SELECT id, content, metadata, 1 - (embedding <=> $1::vector) AS similarity
+      SELECT id, content, metadata, 1 - (embedding <=> '${vectorStr}'::vector) AS similarity
       FROM "RagDocument"
-      WHERE metadata->>'level' <= $2
-      ORDER BY embedding <=> $1::vector
-      LIMIT $3;
+      WHERE metadata->>'level' <= '${level}'
+      ORDER BY embedding <=> '${vectorStr}'::vector
+      LIMIT ${k}
     `;
-    params = [vectorStr, level, k];
   } else {
     sql = `
-      SELECT id, content, metadata, 1 - (embedding <=> $1::vector) AS similarity
+      SELECT id, content, metadata, 1 - (embedding <=> '${vectorStr}'::vector) AS similarity
       FROM "RagDocument"
-      ORDER BY embedding <=> $1::vector
-      LIMIT $2;
+      ORDER BY embedding <=> '${vectorStr}'::vector
+      LIMIT ${k}
     `;
-    params = [vectorStr, k];
   }
 
-  const client = await pool.connect();
-  try {
-    const result = await client.query(sql, params);
-    const docs: RagDocument[] = [];
+  const rows = await prisma.$queryRawUnsafe<{
+    id: string;
+    content: string;
+    metadata: Record<string, any>;
+    similarity: number;
+  }[]>(sql);
 
-    for (const row of result.rows) {
-      const similarity = Math.max(0, parseFloat(row.similarity) || 0);
-      docs.push({
-        id: row.id,
-        content: row.content,
-        similarity: Math.round(similarity * 1000) / 1000,
-        metadata: row.metadata || {},
-      });
-    }
+  const docs: RagDocument[] = [];
 
-    return docs.filter((d) => d.similarity >= threshold);
-  } finally {
-    client.release();
+  for (const row of rows) {
+    const similarity = Math.max(0, Number(row.similarity) || 0);
+    docs.push({
+      id: row.id,
+      content: row.content,
+      similarity: Math.round(similarity * 1000) / 1000,
+      metadata: row.metadata || {},
+    });
   }
+
+  return docs.filter((d) => d.similarity >= threshold);
 }
 
 export async function indexDocuments(
@@ -84,59 +82,48 @@ export async function indexDocuments(
   const embeddings = await embedTexts(texts);
   if (!embeddings.length) return;
 
-  const client = await pool.connect();
-  try {
-    for (let i = 0; i < texts.length; i++) {
-      const vectorStr = `[${embeddings[i].join(",")}]`;
-      await client.query(
-        `
-        INSERT INTO "RagDocument" (id, content, embedding, metadata)
-        VALUES ($1, $2, $3::vector, $4)
-        ON CONFLICT (id) DO UPDATE SET
-          content = EXCLUDED.content,
-          embedding = EXCLUDED.embedding,
-          metadata = EXCLUDED.metadata
-        `,
-        [docIds[i], texts[i], vectorStr, JSON.stringify(metaList[i])]
-      );
-    }
-  } finally {
-    client.release();
+  for (let i = 0; i < texts.length; i++) {
+    const vectorStr = `[${embeddings[i].join(",")}]`;
+    const escapedContent = texts[i].replace(/'/g, "''");
+    const escapedMeta = JSON.stringify(metaList[i]).replace(/'/g, "''");
+
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "RagDocument" (id, content, embedding, metadata, "createdAt")
+      VALUES ('${docIds[i]}', '${escapedContent}', '${vectorStr}'::vector, '${escapedMeta}'::jsonb, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        content = EXCLUDED.content,
+        embedding = EXCLUDED.embedding,
+        metadata = EXCLUDED.metadata
+    `);
   }
 }
 
 export async function deleteRagDocument(id: string): Promise<void> {
-  const client = await pool.connect();
-  try {
-    await client.query(`DELETE FROM "RagDocument" WHERE id = $1`, [id]);
-  } finally {
-    client.release();
-  }
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM "RagDocument" WHERE id = '${id}'`
+  );
 }
 
-export async function getRagDocuments(): Promise<{ id: string; metadata: Record<string, any>; createdAt: string }[]> {
-  const client = await pool.connect();
-  try {
-    const result = await client.query(
-      `SELECT id, metadata, "createdAt" FROM "RagDocument" ORDER BY "createdAt" DESC`
-    );
-    return result.rows.map((r) => ({
-      id: r.id,
-      metadata: r.metadata || {},
-      createdAt: r.createdAt?.toISOString() || "",
-    }));
-  } finally {
-    client.release();
-  }
+export async function getRagDocuments(): Promise<{
+  id: string;
+  metadata: Record<string, any>;
+  createdAt: string;
+}[]> {
+  const rows = await prisma.$queryRawUnsafe<{
+    id: string;
+    metadata: Record<string, any>;
+    createdAt: Date;
+  }[]>(`SELECT id, metadata, "createdAt" FROM "RagDocument" ORDER BY "createdAt" DESC`);
+
+  return rows.map((r) => ({
+    id: r.id,
+    metadata: r.metadata || {},
+    createdAt: r.createdAt?.toISOString() || "",
+  }));
 }
 
 export async function deleteAllRagDocuments(): Promise<void> {
-  const client = await pool.connect();
-  try {
-    await client.query(`DELETE FROM "RagDocument"`);
-  } finally {
-    client.release();
-  }
+  await prisma.$executeRawUnsafe(`DELETE FROM "RagDocument"`);
 }
 
 export function chunkText(text: string): string[] {

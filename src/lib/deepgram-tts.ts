@@ -1,10 +1,11 @@
-import env from "./env";
+import env, { getApiKey } from "./env";
 
 export async function synthesizeSpeech(
   text: string,
   voiceId: string
 ): Promise<Buffer> {
-  if (!env.deepgramApiKey) {
+  const apiKey = process.env.DEEPGRAM_API_KEY || (await getApiKey("DEEPGRAM_API_KEY"));
+  if (!apiKey) {
     throw new Error("Deepgram API key not configured");
   }
 
@@ -15,7 +16,7 @@ export async function synthesizeSpeech(
     {
       method: "POST",
       headers: {
-        Authorization: `Token ${env.deepgramApiKey}`,
+        Authorization: `Token ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ text }),

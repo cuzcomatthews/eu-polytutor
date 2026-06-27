@@ -10,20 +10,18 @@ export async function saveTurn(
 ): Promise<void> {
   if (!content.trim()) return;
 
-  let embedding: number[] | null = null;
+  let vectorStr = "NULL";
   try {
-    embedding = await embedText(content);
+    const embedding = await embedText(content);
+    vectorStr = `'[${embedding.join(",")}]'::vector`;
   } catch {}
 
-  const vectorStr = embedding ? `[${embedding.join(",")}]` : null;
+  const escaped = content.replace(/'/g, "''");
 
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO "ConversationTurn" (id, "conversationId", role, content, embedding, "createdAt")
-     VALUES (gen_random_uuid()::text, $1, $2, $3, ${vectorStr ? `$4::vector` : "NULL"}, NOW())`,
-    vectorStr
-      ? [conversationId, role, content, vectorStr]
-      : [conversationId, role, content]
-  );
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "ConversationTurn" (id, "conversationId", role, content, embedding, "createdAt")
+    VALUES (gen_random_uuid()::text, '${conversationId}', '${role}', '${escaped}', ${vectorStr}, NOW())
+  `);
 }
 
 export async function getRecentTurns(
@@ -32,11 +30,9 @@ export async function getRecentTurns(
 ): Promise<{ role: string; content: string }[]> {
   const rows = await prisma.$queryRawUnsafe<{ role: string; content: string }[]>(
     `SELECT role, content FROM "ConversationTurn"
-     WHERE "conversationId" = $1 AND summarized = FALSE
+     WHERE "conversationId" = '${conversationId}' AND summarized = FALSE
      ORDER BY "createdAt" DESC
-     LIMIT $2`,
-    conversationId,
-    maxTurns * 2
+     LIMIT ${maxTurns * 2}`
   );
 
   return rows.reverse().map((r) => ({
@@ -47,8 +43,7 @@ export async function getRecentTurns(
 
 export async function getTotalTurns(conversationId: string): Promise<number> {
   const result = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-    `SELECT COUNT(*) as count FROM "ConversationTurn" WHERE "conversationId" = $1`,
-    conversationId
+    `SELECT COUNT(*) as count FROM "ConversationTurn" WHERE "conversationId" = '${conversationId}'`
   );
   return Number(result[0]?.count || 0);
 }
@@ -58,9 +53,8 @@ export async function generateSummary(
 ): Promise<string | null> {
   const rows = await prisma.$queryRawUnsafe<{ role: string; content: string }[]>(
     `SELECT role, content FROM "ConversationTurn"
-     WHERE "conversationId" = $1 AND summarized = FALSE
-     ORDER BY "createdAt" ASC`,
-    conversationId
+     WHERE "conversationId" = '${conversationId}' AND summarized = FALSE
+     ORDER BY "createdAt" ASC`
   );
 
   if (!rows.length || rows.length < 6) return null;
@@ -80,50 +74,50 @@ export async function generateSummary(
   const summary = response.text.trim();
   if (!summary) return null;
 
-  await prisma.$executeRawUnsafe(
-    `UPDATE "ConversationTurn" SET summarized = TRUE
-     WHERE "conversationId" = $1 AND "createdAt" NOT IN (
-       SELECT "createdAt" FROM "ConversationTurn"
-       WHERE "conversationId" = $1
-       ORDER BY "createdAt" DESC
-       LIMIT $2
-     )`,
-    conversationId,
-    env.memoryMaxTurns * 2
-  );
+  const recentLimit = env.memoryMaxTurns * 2;
 
-  const startRow = await prisma.$queryRawUnsafe<{ idx: number }[]>(
-    `SELECT COUNT(*) as idx FROM "ConversationTurn" WHERE "conversationId" = $1`,
-    conversationId
-  );
+  await prisma.$executeRawUnsafe(`
+    UPDATE "ConversationTurn" SET summarized = TRUE
+    WHERE "conversationId" = '${conversationId}'
+    AND "createdAt" NOT IN (
+      SELECT "createdAt" FROM "ConversationTurn"
+      WHERE "conversationId" = '${conversationId}'
+      ORDER BY "createdAt" DESC
+      LIMIT ${recentLimit}
+    )
+  `);
 
-  let embedding: number[] | null = null;
+  let vectorStr = "NULL";
   try {
-    embedding = await embedText(summary);
+    const embedding = await embedText(summary);
+    vectorStr = `'[${embedding.join(",")}]'::vector`;
   } catch {}
 
-  const vectorStr = embedding ? `[${embedding.join(",")}]` : null;
+  const escapedSummary = summary.replace(/'/g, "''");
 
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO "ConversationSummary" (id, "summaryText", embedding, "turnRangeStart", "turnRangeEnd", "createdAt")
-     VALUES (gen_random_uuid()::text, $1, ${vectorStr ? `$2::vector` : "NULL"}, $3, $4, NOW())`,
-    vectorStr
-      ? [summary, vectorStr, 0, Number(startRow[0]?.idx || rows.length)]
-      : [summary, 0, Number(startRow[0]?.idx || rows.length)]
+  const countResult = await prisma.$queryRawUnsafe<{ idx: bigint }[]>(
+    `SELECT COUNT(*) as idx FROM "ConversationTurn" WHERE "conversationId" = '${conversationId}'`
   );
+  const totalCount = Number(countResult[0]?.idx || rows.length);
+
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "ConversationSummary" (id, "summaryText", embedding, "turnRangeStart", "turnRangeEnd", "createdAt")
+    VALUES (gen_random_uuid()::text, '${escapedSummary}', ${vectorStr}, 0, ${totalCount}, NOW())
+  `);
 
   return summary;
 }
 
 export async function deleteConversation(conversationId: string): Promise<void> {
-  await prisma.conversationTurn.deleteMany({ where: { conversationId } });
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM "ConversationTurn" WHERE "conversationId" = '${conversationId}'`
+  );
   await prisma.conversation.delete({ where: { id: conversationId } });
 }
 
-export async function getSummary(conversationId: string): Promise<string> {
+export async function getSummary(): Promise<string> {
   const rows = await prisma.$queryRawUnsafe<{ summaryText: string }[]>(
-    `SELECT "summaryText" FROM "ConversationSummary"
-     ORDER BY "createdAt" DESC LIMIT 1`
+    `SELECT "summaryText" FROM "ConversationSummary" ORDER BY "createdAt" DESC LIMIT 1`
   );
   return rows[0]?.summaryText || "";
 }

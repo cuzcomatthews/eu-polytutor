@@ -45,13 +45,15 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const [rolesLoading, setRolesLoading] = useState(true);
+
   useEffect(() => {
     fetch("/api/roles").then((r) => r.json()).then((d) => {
       setRoles(d.roles || []);
       if (d.roles?.length && !activeRoleId) {
         setActiveRoleId(d.roles[0].id);
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setRolesLoading(false));
     fetchConversations();
   }, []);
 
@@ -227,15 +229,22 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
       <div className="flex items-center gap-3 px-4 py-3 border-b"
         style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}>
         <div className="flex-1">
-          <select
-            value={activeRoleId}
-            onChange={(e) => setActiveRoleId(e.target.value)}
-            className="input-field max-w-[200px]"
-          >
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
-          </select>
+            <select
+              value={activeRoleId}
+              onChange={(e) => setActiveRoleId(e.target.value)}
+              className="input-field max-w-[200px]"
+              disabled={rolesLoading}
+            >
+              {rolesLoading ? (
+                <option>Loading...</option>
+              ) : roles.length === 0 ? (
+                <option value="">No roles available</option>
+              ) : (
+                roles.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))
+              )}
+            </select>
         </div>
         <button onClick={createConversation} className="btn-primary text-sm" disabled={!activeRoleId}>
           + New Chat

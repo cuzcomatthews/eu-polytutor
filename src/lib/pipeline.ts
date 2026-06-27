@@ -64,7 +64,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   metrics.ragMs = performance.now() - t2;
 
   // 3. Memory
-  const summary = await getSummary(input.conversationId);
+  const summary = await getSummary();
 
   // 4. Build prompt + LLM
   const history = await getRecentTurns(input.conversationId);

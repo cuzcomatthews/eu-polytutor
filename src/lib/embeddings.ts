@@ -1,7 +1,8 @@
-import env from "./env";
+import env, { getApiKey } from "./env";
 
 export async function embedText(text: string): Promise<number[]> {
-  if (!env.huggingfaceToken) {
+  const apiKey = process.env.HUGGINGFACEHUB_API_TOKEN || (await getApiKey("HUGGINGFACEHUB_API_TOKEN"));
+  if (!apiKey) {
     throw new Error("HuggingFace API token not configured");
   }
 
@@ -10,7 +11,7 @@ export async function embedText(text: string): Promise<number[]> {
   const response = await fetch(modelUrl, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.huggingfaceToken}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ inputs: text }),
@@ -26,7 +27,8 @@ export async function embedText(text: string): Promise<number[]> {
 }
 
 export async function embedTexts(texts: string[]): Promise<number[][]> {
-  if (!env.huggingfaceToken) {
+  const apiKey = process.env.HUGGINGFACEHUB_API_TOKEN || (await getApiKey("HUGGINGFACEHUB_API_TOKEN"));
+  if (!apiKey) {
     throw new Error("HuggingFace API token not configured");
   }
 
@@ -35,7 +37,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
   const response = await fetch(modelUrl, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.huggingfaceToken}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ inputs: texts }),
