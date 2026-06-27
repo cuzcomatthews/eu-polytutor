@@ -28,6 +28,7 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
   const [newWord, setNewWord] = useState("");
   const [loading, setLoading] = useState(false);
   const [flipped, setFlipped] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
@@ -80,8 +81,17 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
     });
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const startPractice = () => {
-    const wordIds = entries.map((e) => e.id);
+    const wordIds = selectedIds.size > 0 ? Array.from(selectedIds) : entries.map((e) => e.id);
     if (!wordIds.length) return;
     const params = new URLSearchParams({
       topicId: "dictionary-practice",
@@ -135,8 +145,13 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
             className="btn-primary"
             style={{ background: "var(--owl-green)" }}
           >
-            Practice All
+            {selectedIds.size > 0 ? `Practice (${selectedIds.size})` : "Practice All"}
           </button>
+          {selectedIds.size > 0 && (
+            <button onClick={() => setSelectedIds(new Set())} className="btn-ghost text-sm">
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
@@ -146,6 +161,7 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {entries.map((entry) => {
               const isFlipped = flipped.has(entry.id);
+              const isSelected = selectedIds.has(entry.id);
               return (
                 <div key={entry.id} className="animate-slide-up">
                   <button
@@ -153,13 +169,26 @@ export default function DictionaryView({ onProgressUpdate }: Props) {
                     className="w-full aspect-[3/4] rounded-2xl relative transition-all duration-300 hover:scale-[1.03] active:scale-95 overflow-hidden"
                     style={{
                       background: "var(--card)",
-                      border: "2px solid var(--border)",
-                      borderBottomWidth: "4px",
+                      border: isSelected ? "3px solid var(--owl-green)" : "2px solid var(--border)",
+                      borderBottomWidth: isSelected ? "5px" : "4px",
+                      borderBottomColor: isSelected ? "var(--owl-green)" : undefined,
                     }}
                   >
                     <div className="absolute top-2 left-2">
                       {difficultyDot(entry.difficulty)}
                     </div>
+                    {/* Selection checkbox */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleSelect(entry.id); }}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-lg border-2 flex items-center justify-center text-xs font-bold transition-colors"
+                      style={{
+                        borderColor: isSelected ? "var(--owl-green)" : "var(--border)",
+                        background: isSelected ? "var(--owl-green)" : "var(--card)",
+                        color: isSelected ? "white" : "transparent",
+                      }}
+                    >
+                      ✓
+                    </button>
 
                     <div className="flex flex-col items-center justify-center h-full px-2 pb-6">
                       {isFlipped ? (

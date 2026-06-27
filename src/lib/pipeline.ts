@@ -137,8 +137,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
       const audioBuffer = await synthesizeSpeech(responseText, voiceId);
       audioBase64 = audioBuffer.toString("base64");
-    } catch (ttsErr) {
-      console.error("TTS failed:", ttsErr);
+    } catch (ttsErr: any) {
+      console.error("TTS failed:", ttsErr?.message || ttsErr);
     }
   }
   metrics.ttsMs = performance.now() - t4;

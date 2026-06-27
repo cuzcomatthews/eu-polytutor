@@ -406,13 +406,15 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                       )}
                       {msg.role === "assistant" && (
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          {msg.audioBase64 && (
+                          {msg.audioBase64 ? (
                             <button
                               onClick={() => (isPlaying ? stopAudio() : playAudio(msg.audioBase64!))}
                               className="text-xs flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity"
                             >
                               {isPlaying ? "⏹ Stop" : "🔊 Play"}
                             </button>
+                          ) : (
+                            <span className="text-xs opacity-40">🔇 Audio unavailable</span>
                           )}
                           <button
                             onClick={() => handleTranslate(i, msg.content)}
