@@ -15,27 +15,41 @@ export async function POST(request: NextRequest) {
     }
 
     const entries = await prisma.dictionaryEntry.findMany({
-      where: { id: { in: wordIds }, userId },
+      where: { id: { in: wordIds.slice(0, 20) }, userId },
     });
 
-    const targetName = env.targetLanguage;
-    const nativeName = env.nativeLanguage;
+    const targetName = env.targetLanguage === "de" ? "German" : env.targetLanguage;
+    const nativeName = env.nativeLanguage === "es" ? "Spanish" : env.nativeLanguage;
 
     const wordList = entries.map((e) => `${e.word} (${e.translation})`).join(", ");
 
-    const prompt = `Create a 5-exercise practice session using ONLY these ${targetName} words: ${wordList}.
+    const prompt = `Create 3 quick practice exercises using ONLY these ${targetName} words: ${wordList}.
 
 The user's native language is ${nativeName}.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON following this exact shape:
 {
+  "teaching_notes": "Brief ${nativeName} introduction",
   "exercises": [
-    {"type": "fill_blank", "sentence": "___ with gap", "answer": "correct word", "options": ["opt1","opt2","opt3","opt4"]},
-    {"type": "match_pairs", "pairs": [{"left": "${targetName}", "right": "${nativeName}"}]},
-    {"type": "reorder", "words": ["w1","w2","w3"], "answer": "correct sentence"},
-    {"type": "pick_translation", "sentence": "${targetName}", "answer": "correct", "options": ["opt1","opt2","opt3","opt4"]}
+    {
+      "kind": "multiple_choice",
+      "prompt": "Instruction in ${nativeName}",
+      "payload": { "options": ["a","b","c","d"], "correct_index": 0, "hint": "${targetName} word or phrase" }
+    },
+    {
+      "kind": "fill_blank",
+      "prompt": "Instruction in ${nativeName}",
+      "payload": { "sentence": "${targetName} sentence with ___", "answers": ["correct"], "hint": "optional ${nativeName} hint" }
+    },
+    {
+      "kind": "match_pairs",
+      "prompt": "Match words to translations",
+      "payload": { "pairs": [{"left": "${targetName}", "right": "${nativeName}"}] }
+    }
   ]
-}`;
+}
+
+Use exactly 3 exercises mixing the kinds above. All prompts and hints in ${nativeName}.`;
 
     const response = await generateResponse(
       [{ role: "user", content: prompt }],

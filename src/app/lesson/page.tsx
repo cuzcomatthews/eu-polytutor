@@ -29,6 +29,23 @@ function LessonContent() {
 
   useEffect(() => {
     if (!topicId) return;
+
+    // Dictionary practice mode
+    if (topicId === "dictionary-practice") {
+      fetch("/api/dictionary/practice", {
+        method: "POST",
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ wordIds: keyPoints }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          setExercises(d);
+          setPhase("playing");
+        })
+        .catch(() => setPhase("intro"));
+      return;
+    }
+
     fetch("/api/lessons/start", {
       method: "POST",
       headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
@@ -88,8 +105,16 @@ function LessonContent() {
   const handleNext = () => {
     setLastResult(null);
     setAnswer(null);
-    if (isLast) setPhase("complete");
-    else setIdx((i) => i + 1);
+    if (isLast) {
+      setPhase("complete");
+      if (accuracy >= 60 && topicId && topicId !== "milestone") {
+        fetch("/api/syllabus/complete", {
+          method: "POST",
+          headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({ topicId }),
+        }).catch(() => {});
+      }
+    } else setIdx((i) => i + 1);
   };
 
   const goBack = () => router.back();

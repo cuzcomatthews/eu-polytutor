@@ -5,73 +5,95 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-sidebar: #1a1b2e;
-  --color-sidebar-hover: #252742;
-  --color-sidebar-text: #a5a6c4;
-  --color-sidebar-active: #6366f1;
-  --color-accent: #6366f1;
-  --color-accent-hover: #5558e6;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-card: #ffffff;
-  --color-card-hover: #f8fafc;
-  --color-border: #e2e8f0;
-  --color-input: #f1f5f9;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-border: var(--border);
+  --color-input: var(--input);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-owl-blue: var(--owl-blue);
+  --color-owl-green: var(--owl-green);
+  --color-owl-red: var(--owl-red);
+  --color-owl-gold: var(--owl-gold);
+  --color-owl-mist: var(--owl-mist);
 }
 
 :root {
-  --background: #f1f5f9;
-  --foreground: #1e293b;
-}
-
-.dark {
-  --background: #0f172a;
-  --foreground: #e2e8f0;
-  --color-sidebar: #0f172a;
-  --color-sidebar-hover: #1e293b;
-  --color-card: #1e293b;
-  --color-card-hover: #334155;
-  --color-border: #334155;
-  --color-input: #1e293b;
+  --background: #f7f7f7;
+  --foreground: #3c3c3c;
+  --sidebar: #1cb0f6;
+  --sidebar-hover: #1899d6;
+  --sidebar-text: rgba(255, 255, 255, 0.85);
+  --sidebar-active: #ffffff;
+  --accent: #1cb0f6;
+  --accent-hover: #1899d6;
+  --success: #58cc02;
+  --warning: #ff9600;
+  --error: #ff4b4b;
+  --card: #ffffff;
+  --card-hover: #f0f0f0;
+  --border: #e5e5e5;
+  --input: #f7f7f7;
+  --owl-blue: #1cb0f6;
+  --owl-green: #58cc02;
+  --owl-red: #ff4b4b;
+  --owl-gold: #ffc800;
+  --owl-mist: #e5e5e5;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans);
 }
 
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+    scrollbar-color: var(--border) transparent;
   }
 }
 
 @layer components {
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
-    color: var(--color-sidebar-text);
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200;
+    color: var(--sidebar-text);
+    letter-spacing: 0.01em;
   }
 
   .sidebar-link:hover {
-    background: var(--color-sidebar-hover);
+    background: var(--sidebar-hover);
     color: white;
   }
 
   .sidebar-link.active {
-    background: rgba(99, 102, 241, 0.15);
-    color: var(--color-accent);
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--sidebar-active);
   }
 
   .btn-primary {
-    @apply px-4 py-2 rounded-lg font-medium text-white transition-all duration-200 cursor-pointer;
-    background: var(--color-accent);
+    @apply px-5 py-3 rounded-2xl font-bold text-white transition-all duration-200 cursor-pointer text-sm;
+    background: var(--accent);
+    border: none;
+    border-bottom: 4px solid rgba(0, 0, 0, 0.15);
+    letter-spacing: 0.02em;
 
-    &:hover {
-      background: var(--color-accent-hover);
+    &:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    &:active:not(:disabled) {
+      border-bottom-width: 2px;
+      transform: translateY(2px);
     }
 
     &:disabled {
@@ -81,45 +103,43 @@ body {
   }
 
   .btn-ghost {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 cursor-pointer;
+    @apply px-5 py-3 rounded-2xl font-bold transition-all duration-200 cursor-pointer text-sm;
     background: transparent;
-    color: var(--color-sidebar-text);
+    color: var(--accent);
+    border: 2px solid var(--border);
 
     &:hover {
-      background: var(--color-sidebar-hover);
-      color: white;
+      background: var(--input);
     }
   }
 
   .btn-danger {
-    @apply px-4 py-2 rounded-lg font-medium text-white transition-all duration-200 cursor-pointer;
-    background: var(--color-error);
+    @apply px-5 py-3 rounded-2xl font-bold text-white transition-all duration-200 cursor-pointer text-sm;
+    background: var(--error);
+    border: none;
+    border-bottom: 4px solid rgba(0, 0, 0, 0.15);
 
     &:hover {
-      background: #dc2626;
+      filter: brightness(1.08);
     }
   }
 
   .card {
-    @apply rounded-xl p-5 transition-all duration-200;
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-  }
-
-  .card:hover {
-    background: var(--color-card-hover);
+    @apply rounded-2xl p-5 transition-all duration-200;
+    background: var(--card);
+    border: 2px solid var(--border);
   }
 
   .input-field {
-    @apply w-full px-3 py-2 rounded-lg text-sm border transition-colors duration-200;
-    background: var(--color-input);
-    border-color: var(--color-border);
+    @apply w-full px-4 py-3 rounded-2xl text-sm font-medium border-2 transition-all duration-200;
+    background: var(--input);
+    border-color: var(--border);
     color: var(--foreground);
 
     &:focus {
       outline: none;
-      border-color: var(--color-accent);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(28, 176, 246, 0.15);
     }
   }
 }
@@ -160,12 +180,12 @@ body {
 }
 
 @keyframes pulseRing {
-  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  70% { box-shadow: 0 0 0 12px rgba(99, 102, 241, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(28, 176, 246, 0.4); }
+  70% { box-shadow: 0 0 0 12px rgba(28, 176, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(28, 176, 246, 0); }
 }
 
 @keyframes recordPulse {
-  0%, 100% { transform: scale(1); background: var(--color-error); }
+  0%, 100% { transform: scale(1); background: var(--error); }
   50% { transform: scale(1.1); background: #dc2626; }
 }
