@@ -100,7 +100,8 @@ export async function evaluateAnswer(
   exerciseType: string,
   userId: string
 ): Promise<{ correct: boolean; feedback: string }> {
-  const nativeLang = env.nativeLanguage;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const nativeLang = user?.nativeLanguage || env.nativeLanguage;
   const nativeName =
     nativeLang === "de" ? "German" :
     nativeLang === "fr" ? "French" :
@@ -117,25 +118,13 @@ export async function evaluateAnswer(
     return { correct: userAnswer === "all_matched", feedback: "All pairs matched!" };
   }
 
-  if (exerciseType === "multiple_choice" || exerciseType === "fill_blank") {
-    const userLower = userAnswer.toLowerCase().trim();
-    const expectedLower = expectedAnswer.toLowerCase().trim();
-    const correct = userLower === expectedLower;
-    return {
-      correct,
-      feedback: correct
-        ? `Correct! ✓`
-        : `Incorrect. The correct answer is: ${expectedAnswer}`
-    };
-  }
-
-  const prompt = `You are evaluating a language exercise answer. Exercise type: ${exerciseType}
+  // For all types, use LLM for flexible grading
+  const prompt = `You are evaluating a language exercise answer. Exercise type: ${exerciseType}.
 
 Expected answer: "${expectedAnswer}"
 User's answer: "${userAnswer}"
 
-For type_answer: accept minor typos and alternative phrasings, evaluate grammar and meaning.
-For ordering: the items must be in the correct order.
+Accept the answer as correct if it conveys the same meaning, even if there are minor typos, different word choices, or slight grammar variations. Be generous with correctness.
 
 Respond ONLY in ${nativeName}. Return ONLY valid JSON:
 { "correct": true/false, "feedback": "brief feedback in ${nativeName}" }`;
@@ -154,7 +143,7 @@ Respond ONLY in ${nativeName}. Return ONLY valid JSON:
   const userLower = userAnswer.toLowerCase().trim();
   const expectedLower = expectedAnswer.toLowerCase().trim();
   return {
-    correct: userLower === expectedLower,
+    correct: userLower === expectedLower || userLower.includes(expectedLower) || expectedLower.includes(userLower),
     feedback: userLower === expectedLower ? "Correct!" : "Not quite right.",
   };
 }
