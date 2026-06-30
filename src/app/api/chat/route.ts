@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
     const audioFile = formData.get("audio") as File | null;
     const conversationId = formData.get("conversationId") as string;
     const roleId = formData.get("roleId") as string;
-    const skipTts = formData.get("skipTts") === "true";
 
     if (!conversationId || !roleId) {
       return NextResponse.json(
@@ -48,7 +47,6 @@ export async function POST(request: NextRequest) {
       userLevel,
       audioBytes,
       textMessage,
-      skipTts,
     });
 
     await updateStreak(userId);

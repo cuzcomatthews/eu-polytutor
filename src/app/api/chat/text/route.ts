@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const { userId } = getUserFromRequest(request);
 
     const body = await request.json();
-    const { conversationId, roleId, text, skipTts } = body;
+    const { conversationId, roleId, text } = body;
 
     if (!conversationId || !roleId || !text) {
       return NextResponse.json(
@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
       roleId,
       userLevel,
       textMessage: text,
-      skipTts: skipTts || false,
     });
 
     await updateStreak(userId);

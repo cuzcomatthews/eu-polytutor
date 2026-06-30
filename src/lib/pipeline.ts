@@ -1,5 +1,4 @@
 import { transcribeAudio } from "./deepgram-stt";
-import { synthesizeSpeech } from "./deepgram-tts";
 import { generateResponse } from "./deepseek";
 import { queryRag } from "./rag";
 import { saveTurn, getRecentTurns, getTotalTurns, generateSummary, getSummary } from "./memory";
@@ -14,26 +13,23 @@ export interface PipelineInput {
   userLevel: string;
   audioBytes?: Buffer;
   textMessage?: string;
-  skipTts?: boolean;
 }
 
 export interface PipelineOutput {
   transcription: string;
   responseText: string;
-  audioBase64?: string;
   ragSources: { content: string; similarity: number }[];
   metrics: {
     sttMs: number;
     ragMs: number;
     llmMs: number;
-    ttsMs: number;
     totalMs: number;
   };
 }
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineOutput> {
   const t0 = performance.now();
-  const metrics = { sttMs: 0, ragMs: 0, llmMs: 0, ttsMs: 0, totalMs: 0 };
+  const metrics = { sttMs: 0, ragMs: 0, llmMs: 0, totalMs: 0 };
 
   const role = await prisma.role.findUnique({ where: { id: input.roleId } });
   if (!role) throw new Error("Role not found");
@@ -122,39 +118,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     },
   });
 
-  // 8. TTS
-  let audioBase64: string | undefined;
-  const t4 = performance.now();
-
-  if (!input.skipTts) {
-    try {
-      let voiceId = role.voiceId;
-      try {
-        const user = await prisma.user.findUnique({
-          where: { id: input.userId },
-          select: { professorVoice: true, tutorVoice: true, companionMVoice: true, companionFVoice: true },
-        });
-        if (user) {
-          if (role.name === "Professor" && user.professorVoice) voiceId = user.professorVoice;
-          else if (role.name.includes("Tutor") && user.tutorVoice) voiceId = user.tutorVoice;
-          else if (role.name === "Male Companion" && user.companionMVoice) voiceId = user.companionMVoice;
-          else if (role.name === "Female Companion" && user.companionFVoice) voiceId = user.companionFVoice;
-        }
-      } catch {}
-
-      const speakText = responseText.length > 2000 ? responseText.slice(0, 1997) + "..." : responseText;
-      const audioBuffer = await synthesizeSpeech(speakText, voiceId);
-      audioBase64 = audioBuffer.toString("base64");
-    } catch {}
-  }
-  metrics.ttsMs = performance.now() - t4;
-
   metrics.totalMs = performance.now() - t0;
 
   return {
     transcription: userText,
     responseText,
-    audioBase64,
     ragSources: ragContext.map((d) => ({
       content: d.content.slice(0, 200),
       similarity: d.similarity,
@@ -163,7 +131,6 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       sttMs: Math.round(metrics.sttMs),
       ragMs: Math.round(metrics.ragMs),
       llmMs: Math.round(metrics.llmMs),
-      ttsMs: Math.round(metrics.ttsMs),
       totalMs: Math.round(metrics.totalMs),
     },
   };

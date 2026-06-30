@@ -167,15 +167,36 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
       if (data.error) {
         setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${data.error}` }]);
       } else {
+        // Show message immediately
+        const msgIndex = messages.length + 2;
         const newMsgs: Message[] = [
           { role: "user", content: data.transcription },
-          { role: "assistant", content: data.responseText, audioBase64: data.audioBase64 },
+          { role: "assistant", content: data.responseText },
         ];
         setMessages((prev) => [...prev, ...newMsgs]);
         setMetrics(data.metrics);
 
-        if (data.audioBase64) {
-          playAudio(data.audioBase64);
+        // Generate TTS separately
+        try {
+          const ttsRes = await fetch("/api/chat/tts", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ text: data.responseText, roleId: activeRoleId }),
+          });
+          const ttsData = await ttsRes.json();
+          if (ttsData.audioBase64) {
+            setMessages((prev) => {
+              const updated = [...prev];
+              const assistantIdx = updated.length - 1;
+              if (updated[assistantIdx]?.role === "assistant") {
+                updated[assistantIdx] = { ...updated[assistantIdx], audioBase64: ttsData.audioBase64 };
+              }
+              return updated;
+            });
+            playAudio(ttsData.audioBase64);
+          }
+        } catch (ttsErr) {
+          console.error("TTS generation failed:", ttsErr);
         }
       }
     } catch (e) {
@@ -202,13 +223,37 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
       const data = await res.json();
       const responseContent = data?.responseText || data?.text || JSON.stringify(data);
 
+      // Show message immediately
       setMessages((prev) => [...prev, {
         role: "assistant",
         content: data?.error ? `Error: ${data.error}` : responseContent,
-        audioBase64: data?.audioBase64,
       }]);
       setMetrics(data?.metrics);
-      if (data?.audioBase64) playAudio(data.audioBase64);
+
+      // Generate TTS separately
+      if (!data?.error && responseContent) {
+        try {
+          const ttsRes = await fetch("/api/chat/tts", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ text: responseContent, roleId: activeRoleId }),
+          });
+          const ttsData = await ttsRes.json();
+          if (ttsData.audioBase64) {
+            setMessages((prev) => {
+              const updated = [...prev];
+              const assistantIdx = updated.length - 1;
+              if (updated[assistantIdx]?.role === "assistant") {
+                updated[assistantIdx] = { ...updated[assistantIdx], audioBase64: ttsData.audioBase64 };
+              }
+              return updated;
+            });
+            playAudio(ttsData.audioBase64);
+          }
+        } catch (ttsErr) {
+          console.error("TTS generation failed:", ttsErr);
+        }
+      }
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Connection error." }]);
     } finally {
@@ -471,7 +516,6 @@ export default function ChatView({ userLevel, onProgressUpdate }: ChatViewProps)
                     <span>STT: {metrics.sttMs}ms</span>
                     <span>RAG: {metrics.ragMs}ms</span>
                     <span>LLM: {metrics.llmMs}ms</span>
-                    <span>TTS: {metrics.ttsMs}ms</span>
                     <span style={{ color: "var(--color-accent)" }}>Total: {metrics.totalMs}ms</span>
                   </div>
                 )}
