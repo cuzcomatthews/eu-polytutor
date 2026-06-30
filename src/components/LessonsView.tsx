@@ -125,7 +125,7 @@ export default function LessonsView({ userLevel, onLevelChange, onProgressUpdate
             </button>
             {syllabus?.topics?.length > 0 && (
               <button onClick={startMilestone} disabled={loading} className="btn-primary text-sm">
-                Take Milestone
+                Level Test
               </button>
             )}
           </div>

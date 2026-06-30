@@ -221,23 +221,25 @@ Per-kind payload shape (must match exactly):
 - ordering:       {"items": ["${targetName} word a","${targetName} word b","${targetName} word c","${targetName} word d"], "correct_order": [0,1,2,3], "hint": "Translation in ${nativeName} the user should produce"}
 - type_answer:    {"answers": ["accepted answer"], "hint": "${nativeName} sentence the user must translate to ${targetName}"}
 
+IMPORTANT: For type_answer and fill_blank exercises, the phrase/sentence to translate or complete MUST be in the "prompt" field, NOT in the "hint" field. The hint is optional and only for additional help.
+
 Return ONLY valid JSON (no markdown, no explanation):
 {
   "teaching_notes": "2-3 sentence mini-lesson in ${nativeName} explaining the key concepts before exercises",
   "exercises": [
     {
       "kind": "multiple_choice",
-      "prompt": "Instruction in ${nativeName}",
+      "prompt": "Choose the correct translation: 'Hello' in ${targetName}",
       "payload": { "options": ["a","b","c","d"], "correct_index": 0, "hint": "..." }
     },
     {
       "kind": "fill_blank",
-      "prompt": "Instruction in ${nativeName}",
-      "payload": { "sentence": "... ___ ...", "answers": ["..."], "hint": "..." }
+      "prompt": "Complete: 'I ___ from Spain' (use the verb 'to come')",
+      "payload": { "sentence": "I ___ from Spain", "answers": ["come"], "hint": "..." }
     },
     {
       "kind": "match_pairs",
-      "prompt": "Instruction in ${nativeName}",
+      "prompt": "Match the ${targetName} words with their ${nativeName} translations",
       "payload": { "pairs": [{"left": "...", "right": "..."}] }
     },
     {
@@ -247,8 +249,8 @@ Return ONLY valid JSON (no markdown, no explanation):
     },
     {
       "kind": "type_answer",
-      "prompt": "Write this in ${targetName}",
-      "payload": { "answers": ["..."], "hint": "${nativeName} sentence to translate" }
+      "prompt": "Translate to ${targetName}: 'I am learning ${targetName}'",
+      "payload": { "answers": ["I am learning ${targetName}"], "hint": "..." }
     }
   ]
 }
