@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < topics.length; i++) {
       if (topics[i].id === topicId && i + 1 < topics.length) {
         const next = topics[i + 1];
-        if (next.status === "locked") {
+        if (!next.status || next.status === "locked") {
           next.status = "unlocked";
         }
         break;
